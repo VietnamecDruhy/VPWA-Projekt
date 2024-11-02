@@ -1,0 +1,183 @@
+// app global css in SCSS form
+
+
+
+/* src/assets/styles/fonts.scss */
+@font-face {
+  font-family: 'SF Pro';
+  src: url('./SFPro/sf-pro-text-regular-webfont.woff2') format('woff2'),
+  url('./SFPro/sf-pro-text-regular-webfont.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: url('./SFPro/sf-pro-text-medium-webfont.woff2') format('woff2'),
+  url('./SFPro/sf-pro-text-medium-webfont.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: url('./SFPro/sf-pro-text-semibold-webfont.woff2') format('woff2'),
+  url('./SFPro/sf-pro-text-semibold-webfont.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: url('./SFPro/sf-pro-text-bold-webfont.woff2') format('woff2'),
+  url('./SFPro/sf-pro-text-bold-webfont.woff') format('woff');
+  font-weight: 700;
+}
+
+.sf-pro-400 {
+  font-family: 'sf-pro-400', sans-serif;
+  font-weight: 400;
+}
+
+.sf-pro-500 {
+  font-family: 'sf-pro-500', sans-serif;
+  font-weight: 500;
+}
+
+.sf-pro-600 {
+  font-family: 'sf-pro-600', sans-serif;
+  font-weight: 600;
+}
+
+.sf-pro-700 {
+  font-family: 'sf-pro-700', sans-serif;
+  font-weight: 700;
+}
+
+
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/materialicons/v142/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2) format('woff2');
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -moz-font-feature-settings: 'liga';
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* Chat component styling START */
+.chat-container {
+  height: 100vh; /* Full height for the chat container */
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto; /* Allow scrolling for messages */
+  padding: 16px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.chat-message {
+  display: flex;
+  margin-bottom: 0.5rem; /* Space between messages */
+}
+
+.chat-messages::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.bubble {
+  max-width: 60%; /* Limit bubble width */
+  padding: 5px 12px;
+  border-radius: 20px;
+  color: white; /* Text color inside bubbles */
+  word-break: break-word;
+}
+
+.chat-message.me .bubble {
+  background-color: #218aff; /* Blue for messages from me */
+  align-self: flex-end; /* Align right */
+}
+
+.chat-message.other .bubble {
+  background-color: #6e6e6e; /* Gray for messages from the other person */
+  align-self: flex-start; /* Align left */
+}
+
+.chat-message.system .bubble {
+  background-color: #ff9100; /* Orange for system messages */
+  align-self: flex-start; /* Align left */
+  color: #121212; /* Text color inside bubbles */
+}
+
+/* Typing Indicator Bubble */
+.chat-message.typing {
+  display: flex;
+  align-items: center; /* Center vertically */
+  margin-bottom: 0.5rem; /* Space between messages */
+}
+
+.typing-bubble {
+  max-width: 60%; /* Limit bubble width */
+  padding: 5px 12px;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent background */
+  color: white; /* Text color */
+  display: flex;
+  align-items: center; /* Center content vertically */
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 2px;
+  border-radius: 50%; /* Make it circular */
+  background-color: white; /* Dot color */
+  animation: dot-blink 1s infinite alternate; /* Animation */
+}
+
+/* Animation for dots */
+@keyframes dot-blink {
+  0%, 100% {
+    opacity: 0.2; /* Faint */
+  }
+  50% {
+    opacity: 1; /* Fully visible */
+  }
+}
+
+/* Chat input bar styling */
+.chat-input-bar {
+  position: sticky;
+  bottom: 0;
+  background-color: #1d1d1d; /* Ensure the same dark background as the page */
+  padding: 8px 16px;
+  z-index: 10;
+}
+
+/* Chat component styling END */
+
+.message-highlight {
+  background-color: #ffeb3b; /* Highlight background */
+  font-weight: bold;
+}
+
+
