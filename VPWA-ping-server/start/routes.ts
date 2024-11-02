@@ -23,3 +23,11 @@ import Route from '@ioc:Adonis/Core/Route'
 Route.get('/', async () => {
   return { hello: 'world' }
 })
+
+Route.get('/api/test-connection', async () => {
+  return {
+    status: 'success',
+    message: 'Hello from Adonis!',
+    timestamp: new Date()
+  }
+})
