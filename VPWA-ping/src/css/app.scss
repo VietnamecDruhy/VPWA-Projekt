@@ -175,9 +175,11 @@
 
 /* Chat component styling END */
 
-.message-highlight {
-  background-color: #ffeb3b; /* Highlight background */
+.mention {
+  background-color: #70a5ff; /* Highlight background */
   font-weight: bold;
+  border-radius: 4px;
+  padding: 2px 4px;
 }
 
 

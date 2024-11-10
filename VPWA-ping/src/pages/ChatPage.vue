@@ -116,6 +116,7 @@
           </q-item-section>
         </q-item>
 
+
         <q-separator color="grey-7" class="q-my-md" />
 
         <q-item-label header class="text-white q-mb-md">Settings</q-item-label>
@@ -126,6 +127,18 @@
           </q-item-section>
           <q-item-section>
             <q-item-label class="text-white">Profile</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable v-ripple @click="toggleMentionOnly" class="q-mb-sm">
+          <q-item-section avatar>
+            <q-icon name="bedtime" color="white" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Mention Only</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-toggle v-model="MessageMention" color="primary" keep-color/>
           </q-item-section>
         </q-item>
 
@@ -157,6 +170,16 @@
           </q-list>
         </q-expansion-item>
 
+        <div class="row justify-center">
+          <q-btn
+            color="primary"
+            label="Logout"
+            class="q-mt-md"
+            @click="logout"
+          />
+        </div>
+
+
 
 
       </q-list>
@@ -174,11 +197,12 @@
             </div>
 
             <div
-              v-for="(message, index) in messages"
+              v-for="(message, index) in formattedMessages"
               :key="index"
-              :class="['chat-message',
-              message.text.includes(`@${currentUser.name}`) ? 'highlighted' : '',
-              message.from ===  currentUser.name ? 'me' :  message.from === 'system' ? 'system' : 'other']"
+              :class="[
+                'chat-message',
+                message.from === currentUser.name ? 'me' : message.from === 'system' ? 'system' : 'other'
+              ]"
               :style="{ 'justify-content': message.from === 'me' ? 'flex-end' : 'flex-start' }"
               :ref="(el) => { if (index === 0) firstMessage[0] = el as HTMLElement }"
             >
@@ -193,8 +217,7 @@
                 <span class="time">{{ formatTime(message.timestamp) }}</span>
               </div>
               <div class="bubble">
-                <div>
-                  <span>{{ message.text }}</span>
+                <div v-html="message.text">
                 </div>
               </div>
             </div>
@@ -215,7 +238,7 @@
 
           <!-- Chat input -->
           <div class="chat-input-bar">
-            
+
             <q-input
               rounded
               standout="true"

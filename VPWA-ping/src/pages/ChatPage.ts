@@ -1,4 +1,4 @@
-import { ref, nextTick, onMounted, onUnmounted, watch, Ref } from 'vue'
+import {ref, nextTick, onMounted, onUnmounted, watch, Ref, computed} from 'vue'
 import { useQuasar, QNotifyCreateOptions, scroll } from 'quasar'
 
 const { setVerticalScrollPosition } = scroll
@@ -34,6 +34,7 @@ export default {
     const observer: Ref<IntersectionObserver | null> = ref(null)
     const page = ref(1)
     const MESSAGES_PER_PAGE = 5
+    const MessageMention = ref(false)
 
     const messages: Ref<Message[]> = ref([
       { text: 'Hello! How are you?', from: 'Joe', timestamp: new Date('2023-05-15T14:00:00') },
@@ -75,9 +76,20 @@ export default {
       { text: 'Smart move. Solid error handling can save a lot of headaches later.', from: 'Joe', timestamp: new Date('2023-05-15T14:41:00') }
     ])
 
+    const formattedMessages = computed(() => {
+      return messages.value.map((message) => {
+        const text = message.text;
+        const mentionRegex = new RegExp(`@${currentUser.value.name}`, 'gi');
+
+        // Apply highlight to any mention of the current user's name in the text
+        const formattedText = text.replace(mentionRegex, '<span class="mention">$&</span>');
+
+        return { ...message, text: formattedText };
+      });
+    });
 
 
-        const groups: Ref<Group[]> = ref([
+    const groups: Ref<Group[]> = ref([
       { id: 1, name: 'vpwa team' },
       { id: 2, name: 'Family' },
       { id: 3, name: 'Friends' },
@@ -128,40 +140,40 @@ export default {
 
     const loadMoreMessages = async () => {
         isLoading.value = true;
-    
+
         const container = chatContainer.value;
         if (!container) {
             console.error('Chat container not found');
             isLoading.value = false;
             return;
         }
-    
+
         const scrollHeight = container.scrollHeight; // Current height
         const scrollTop = container.scrollTop; // Current scroll position
-    
+
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
         const newMessages: Message[] = Array.from({ length: MESSAGES_PER_PAGE }, (_, i) => ({
             text: `Loaded message ${page.value * MESSAGES_PER_PAGE - i}`,
             from: i % 2 === 0 ? 'System' : 'OldUser',
             timestamp: new Date(Date.now() - (page.value * MESSAGES_PER_PAGE - i) * 60000)
         }));
-    
+
         // Insert new messages at the beginning
         messages.value = [...newMessages, ...messages.value];
-    
+
         nextTick(() => {
             if (container) {
-                const newScrollHeight = container.scrollHeight; 
+                const newScrollHeight = container.scrollHeight;
                 container.scrollTop = newScrollHeight - (scrollHeight - scrollTop);
             }
             isLoading.value = false;
         });
-    
+
         page.value++;
     };
-    
+
 
     const observeFirstMessage = () => {
       if (firstMessage.value[0]) {
@@ -225,7 +237,7 @@ export default {
     const handleInput = () => {
       console.log('Input received:', text.value)
       const inputText = text.value.trim()
-    
+
       if (inputText !== '') {
         if (inputText.startsWith('/')) {
           const command = inputText.slice(1).trim().toLowerCase()
@@ -237,11 +249,11 @@ export default {
         }
         clearTypingIndicator()  // Ensure typing indicator is cleared after input
       }
-    
+
       // Forcefully clear the input text after message handling
       text.value = ''
     }
-    
+
 
     const handleCommand = (command: string): boolean => {
       console.log('Command received:', command)
@@ -283,7 +295,7 @@ export default {
 
     const showList = () => {
       const userList = chatUsers.value
-        .map(user => user.name) 
+        .map(user => user.name)
         .join(', ');
 
       messages.value.push({
@@ -342,8 +354,6 @@ export default {
       )
     }
 
-    
-
     const isTyping = ref(false)
     const isTypingExpanded = ref(false)
     const typingTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
@@ -352,22 +362,22 @@ export default {
 
     const handleTyping = () => {
 
-    
+
       console.log('Handle typing:')
       isTyping.value = true
-    
+
       // Clear existing timeout
       if (typingTimeout.value) {
         clearTimeout(typingTimeout.value)
       }
-    
+
       // Set new timeout
       typingTimeout.value = setTimeout(() => {
         isTyping.value = false
         isTypingExpanded.value = false
       }, TYPING_TIMEOUT)
     }
-    
+
 
     const toggleTypingExpansion = () => {
       isTypingExpanded.value = !isTypingExpanded.value
@@ -377,15 +387,15 @@ export default {
       console.log('Clearing typing indicator')  // Debug log to check if it's called
       isTyping.value = false  // Reset the typing state
       isTypingExpanded.value = false  // Reset the expanded typing state
-    
+
       // Clear the timeout that controls the typing indicator
       if (typingTimeout.value) {
         clearTimeout(typingTimeout.value)
         typingTimeout.value = null
       }
     }
-    
-    
+
+
 
     return {
       leftDrawerOpen,
@@ -414,6 +424,9 @@ export default {
       handleTyping,
       toggleTypingExpansion,
       clearTypingIndicator,
+      MESSAGES_PER_PAGE,
+      MessageMention,
+      formattedMessages,
     }
   },
 }
