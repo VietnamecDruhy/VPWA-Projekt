@@ -35,6 +35,9 @@ export default {
     const page = ref(1)
     const MESSAGES_PER_PAGE = 5
     const MessageMention = ref(false)
+    const isDialogOpen = ref(false);
+    const newChatName = ref('');
+    const isPrivateChat = ref(false);
 
     const messages: Ref<Message[]> = ref([
       { text: 'Hello! How are you?', from: 'Joe', timestamp: new Date('2023-05-15T14:00:00') },
@@ -188,6 +191,26 @@ export default {
         observer.value.observe(firstMessage.value[0])
       }
     }
+
+    const openCreateChatDialog = () => {
+      isDialogOpen.value = true;
+    };
+
+    const createChat = () => {
+      if (newChatName.value.trim()) {
+        const newChat = {
+          name: newChatName.value,
+          isPrivate: isPrivateChat.value,
+        };
+        // Handle new chat creation (e.g., add to chat list, send to server)
+        console.log('New chat created:', newChat);
+
+        // Reset form and close dialog
+        newChatName.value = '';
+        isPrivateChat.value = false;
+        isDialogOpen.value = false;
+      }
+    };
 
 
 
@@ -427,6 +450,11 @@ export default {
       MESSAGES_PER_PAGE,
       MessageMention,
       formattedMessages,
+      isDialogOpen,
+      newChatName,
+      isPrivateChat,
+      openCreateChatDialog,
+      createChat,
     }
   },
 }

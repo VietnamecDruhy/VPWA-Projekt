@@ -32,22 +32,46 @@
       </q-input>
 
       <q-list bordered>
-        <!-- Invitation item -->
-        <q-item clickable v-ripple class="text-white sf-pro-600">
+
+        <!-- Create Chat Button -->
+        <q-item clickable v-ripple @click="openCreateChatDialog" class="text-white">
           <q-item-section avatar>
-            <q-icon name="mail" color="secondary" />
+            <q-icon name="group_add" color="white" />
           </q-item-section>
           <q-item-section>
-            <q-item-label>Invitation to Join</q-item-label>
-            <q-item-label >From: John Doe</q-item-label>
-          </q-item-section>
-          <q-item-section side>
-            <div class="row items-center">
-              <q-btn flat round dense icon="check" color="positive" size="sm" class="q-mr-xs" />
-              <q-btn flat round dense icon="close" color="negative" size="sm" />
-            </div>
+            <q-item-label>Create Chat</q-item-label>
           </q-item-section>
         </q-item>
+
+        <!-- Create Chat Dialog -->
+        <q-dialog v-model="isDialogOpen">
+          <q-card dark flat style="min-width: 300px;">
+            <q-card-section>
+              <div class="text-h6">Create New Chat</div>
+            </q-card-section>
+
+            <q-card-section>
+              <q-input dark
+                v-model="newChatName"
+                label="Chat Name"
+                placeholder="Enter chat name"
+                dense
+                clearable
+              />
+              <q-toggle
+                v-model="isPrivateChat"
+                label="Private Chat"
+                color="primary"
+                class="q-mt-md"
+              />
+            </q-card-section>
+
+            <q-card-actions align="right">
+              <q-btn flat label="Cancel" color="primary" @click="isDialogOpen = false" />
+              <q-btn label="Create" color="primary" @click="createChat" :disable="!newChatName.trim()" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
 
         <q-item v-for="group in groups" :key="group.id" class="text-white sf-pro-600" clickable v-ripple>
           <q-item-section avatar>
