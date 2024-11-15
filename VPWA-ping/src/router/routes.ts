@@ -13,7 +13,23 @@ const routes: RouteRecordRaw[] = [
     ],
 
   },
-
+  {
+    path: '/auth',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: 'register', name: 'register', meta: { guestOnly: true }, component: () => import('pages/SignPage.vue') },
+      { path: 'login', name: 'login', meta: { guestOnly: true }, component: () => import('pages/SignPage.vue') }
+    ]
+  },
+  {
+    path: '/channels',
+    // channels requires auth
+    meta: { requiresAuth: true },
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', name: 'home', component: () => import('src/pages/ChatPage.vue') }
+    ]
+  },
   // Always leave this as last one,
   // but you can also remove it
   {
