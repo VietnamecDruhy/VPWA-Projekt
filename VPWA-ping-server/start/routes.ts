@@ -31,10 +31,3 @@ Route.get('/api/test-connection', async () => {
     timestamp: new Date()
   }
 })
-
-Route.group(() => {
-  Route.post('register', 'AuthController.register')
-  Route.post('login', 'AuthController.login')
-  Route.post('logout', 'AuthController.logout').middleware('auth')
-  Route.get('me', 'AuthController.me').middleware('auth')
-}).prefix('auth')

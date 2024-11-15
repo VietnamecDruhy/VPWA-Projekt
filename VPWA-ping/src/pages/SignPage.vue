@@ -20,7 +20,7 @@
                 clearable
                 rounded
                 standout
-                v-model="form.name"
+                v-model="name"
                 label="Name"
               >
                 <template v-slot:prepend>
@@ -34,7 +34,7 @@
                 clearable
                 rounded
                 standout
-                v-model="form.surname"
+                v-model="surname"
                 label="Surname"
               >
                 <template v-slot:prepend>
@@ -48,7 +48,7 @@
                 clearable
                 rounded
                 standout
-                v-model="form.nickname"
+                v-model="nickname"
                 label="Nickname"
               >
                 <template v-slot:prepend>
@@ -62,7 +62,7 @@
                 clearable
                 rounded
                 standout
-                v-model="credentials.email"
+                v-model="email"
                 type="email"
                 label="Email"
               >
@@ -77,7 +77,7 @@
                 clearable
                 rounded
                 standout
-                v-model="credentials.password"
+                v-model="password"
                 :type="isPwd ? 'password' : 'text'"
                 label="Password"
               >
@@ -100,7 +100,7 @@
                 clearable
                 rounded
                 standout
-                v-model="form.confirmPassword"
+                v-model="confirmPassword"
                 :type="isPwd ? 'password' : 'text'"
                 label="Confirm Password"
               >
@@ -120,7 +120,6 @@
               size="lg"
               class="full-width sf-pro-600"
               :label="isSignUp ? 'Sign Up' : 'Login'"
-              @click="onSubmit"
             />
           </q-card-actions>
 
@@ -143,8 +142,12 @@ export default {
   name: 'sign-page',
   data () {
     return {
-      credentials: {email: '', password: ''}, // vars for login
-      form: {confirmPassword: '', name: '', surname: '', nickname: ''}, // vars for register 
+      email: '',
+      password: '',
+      confirmPassword: '',
+      name: '',       // Name field for sign-up
+      surname: '',    // Surname field for sign-up
+      nickname: '',   // Nickname field for sign-up
       isPwd: true,
       isSignUp: false // Flag to toggle between sign-in and sign-up
     }
@@ -155,23 +158,12 @@ export default {
       this.resetForm(); // Reset form when toggling between sign in/sign up
     },
     resetForm() {
-      this.credentials = {
-        email: '',
-        password: ''
-      }
-      this.form = {
-        confirmPassword: '',
-        name: '',
-        surname: '',
-        nickname: ''
-      }
-    },
-
-    onSubmit () {
-      if (this.isSignUp)
-        this.$store.dispatch('auth/register', this.form, this.credentials).then(() => this.$router.push(this.redirectTo))
-      else
-        this.$store.dispatch('auth/login', this.credentials).then(() => this.$router.push(this.redirectTo))
+      this.email = '';
+      this.password = '';
+      this.confirmPassword = '';
+      this.name = '';
+      this.surname = '';
+      this.nickname = '';
     }
   }
 }
