@@ -1,3 +1,4 @@
+// src/services/AuthManager.ts
 import { LocalStorage } from 'quasar'
 
 type ChangeListener = (newToken: string | null, oldToken: string | null) => void

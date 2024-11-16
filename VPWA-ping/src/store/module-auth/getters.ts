@@ -1,3 +1,4 @@
+// src/store/module-auth/getters.ts
 import { GetterTree } from 'vuex'
 import { StateInterface } from '../index'
 import { AuthStateInterface } from './state'

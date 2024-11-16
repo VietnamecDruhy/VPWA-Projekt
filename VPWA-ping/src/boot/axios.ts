@@ -1,3 +1,4 @@
+// src/boot/axios.ts
 import { boot } from 'quasar/wrappers'
 import axios, { AxiosInstance } from 'axios'
 import { authManager } from 'src/services'

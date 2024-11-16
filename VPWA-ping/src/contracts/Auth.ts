@@ -1,3 +1,4 @@
+// src/contracts/Auth.ts
 export interface ApiToken {
     type: 'bearer'
     token: string

@@ -1,3 +1,4 @@
+// src/boot/auth.ts
 import { boot } from 'quasar/wrappers'
 import { authManager } from 'src/services'
 import { RouteLocationNormalized, RouteLocationRaw } from 'vue-router'

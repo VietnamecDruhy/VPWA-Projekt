@@ -1,3 +1,4 @@
+// src/services/AuthService.ts
 import type { AxiosError, AxiosRequestConfig } from 'axios'
 import type { ApiToken, LoginCredentials, RegisterData, User } from 'src/contracts'
 import { api } from 'src/boot/axios'

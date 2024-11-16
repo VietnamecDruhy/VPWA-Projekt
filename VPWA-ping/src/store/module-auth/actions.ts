@@ -1,3 +1,4 @@
+// src/store/module-auth/actions.ts
 import { ActionTree } from 'vuex'
 import { StateInterface } from '../index'
 import { AuthStateInterface } from './state'

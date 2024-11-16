@@ -1,3 +1,4 @@
+// src/store/module-auth/mutations.ts
 import { User } from 'src/contracts'
 import { MutationTree } from 'vuex'
 import { AuthStateInterface } from './state'

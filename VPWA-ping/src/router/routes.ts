@@ -1,3 +1,4 @@
+// src/router/routes.ts
 import { RouteRecordRaw } from 'vue-router';
 const routes: RouteRecordRaw[] = [
   {

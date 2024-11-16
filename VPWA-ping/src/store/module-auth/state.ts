@@ -1,3 +1,4 @@
+// src/store/module-auth/state.ts
 import { User } from 'src/contracts'
 
 export interface ExampleStateInterface {

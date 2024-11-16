@@ -1,3 +1,4 @@
+// src/store/index.ts
 import { store } from 'quasar/wrappers'
 import { InjectionKey } from 'vue'
 import { Router } from 'vue-router'
