@@ -93,6 +93,13 @@
                 </template>
               </q-input>
 
+              <q-checkbox
+                v-if="!isSignUp"
+                v-model="credentials.remember"
+                label="Remember me"
+                dense
+              />
+
               <!-- Confirm Password for Sign Up -->
               <q-input
                 v-if="isSignUp"
@@ -100,7 +107,7 @@
                 clearable
                 rounded
                 standout
-                v-model="form.confirmPassword"
+                v-model="form.passwordConfirmation"
                 :type="isPwd ? 'password' : 'text'"
                 label="Confirm Password"
               >
@@ -143,8 +150,8 @@ export default {
   name: 'sign-page',
   data () {
     return {
-      credentials: {email: '', password: ''}, // vars for login
-      form: {confirmPassword: '', name: '', surname: '', nickname: ''}, // vars for register 
+      credentials: {email: '', password: '', remember: false}, // vars for login
+      form: {passwordConfirmation: '', name: '', surname: '', nickname: ''}, // vars for register 
       isPwd: true,
       isSignUp: false // Flag to toggle between sign-in and sign-up
     }
@@ -157,10 +164,11 @@ export default {
     resetForm() {
       this.credentials = {
         email: '',
-        password: ''
+        password: '',
+        remember: false
       }
       this.form = {
-        confirmPassword: '',
+        passwordConfirmation: '',
         name: '',
         surname: '',
         nickname: ''
@@ -168,8 +176,15 @@ export default {
     },
 
     onSubmit () {
-      if (this.isSignUp)
-        this.$store.dispatch('auth/register', this.form, this.credentials).then(() => this.$router.push(this.redirectTo))
+      if (this.isSignUp) {
+        const temp = {email: this.credentials.email, 
+                      password: this.credentials.password, 
+                      passwordConfirmation: this.form.passwordConfirmation,
+                      name: this.form.name,
+                      nickname: this.form.nickname}
+        this.$store.dispatch('auth/register', temp)
+          .then(() => this.isSignUp = !this.isSignUp)
+    }
       else
         this.$store.dispatch('auth/login', this.credentials).then(() => this.$router.push(this.redirectTo))
     }
