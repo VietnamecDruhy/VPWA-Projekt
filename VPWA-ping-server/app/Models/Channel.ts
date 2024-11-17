@@ -12,6 +12,9 @@ export default class Channel extends BaseModel {
   @column()
   public owner_id: number;
 
+  @column()
+  public isPrivate: boolean;
+
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime;
 
