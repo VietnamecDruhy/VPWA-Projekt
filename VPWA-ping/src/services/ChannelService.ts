@@ -19,6 +19,7 @@ class ChannelSocketManager extends SocketManager {
     }
 
     public loadMessages(): Promise<SerializedMessage[]> {
+        console.log('Channel Service: Loading Messages')
         return this.emitAsync('loadMessages')
     }
 }

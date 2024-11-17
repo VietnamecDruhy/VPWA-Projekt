@@ -14,103 +14,48 @@
               </div>
 
               <!-- Name, Surname, Nickname for Sign Up -->
-              <q-input
-                v-if="isSignUp"
-                dense
-                clearable
-                rounded
-                standout
-                v-model="form.name"
-                label="Name"
-              >
+              <q-input v-if="isSignUp" dense clearable rounded standout v-model="form.name" label="Name">
                 <template v-slot:prepend>
                   <q-icon name="badge" />
                 </template>
               </q-input>
 
-              <q-input
-                v-if="isSignUp"
-                dense
-                clearable
-                rounded
-                standout
-                v-model="form.surname"
-                label="Surname"
-              >
+              <q-input v-if="isSignUp" dense clearable rounded standout v-model="form.surname" label="Surname">
                 <template v-slot:prepend>
                   <q-icon name="person" />
                 </template>
               </q-input>
 
-              <q-input
-                v-if="isSignUp"
-                dense
-                clearable
-                rounded
-                standout
-                v-model="form.nickname"
-                label="Nickname"
-              >
+              <q-input v-if="isSignUp" dense clearable rounded standout v-model="form.nickname" label="Nickname">
                 <template v-slot:prepend>
                   <q-icon name="tag" />
                 </template>
               </q-input>
 
               <!-- Email Input -->
-              <q-input
-                dense
-                clearable
-                rounded
-                standout
-                v-model="credentials.email"
-                type="email"
-                label="Email"
-              >
+              <q-input dense clearable rounded standout v-model="credentials.email" type="email" label="Email">
                 <template v-slot:prepend>
                   <q-icon name="email" />
                 </template>
               </q-input>
 
               <!-- Password Input -->
-              <q-input
-                dense
-                clearable
-                rounded
-                standout
-                v-model="credentials.password"
-                :type="isPwd ? 'password' : 'text'"
-                label="Password"
-              >
+              <q-input dense clearable rounded standout v-model="credentials.password"
+                :type="isPwd ? 'password' : 'text'" label="Password">
                 <template v-slot:prepend>
                   <q-icon name="lock" />
                 </template>
                 <template v-slot:append>
-                  <q-icon
-                    :name="isPwd ? 'visibility_off' : 'visibility'"
-                    class="cursor-pointer"
-                    @click="isPwd = !isPwd"
-                  />
+                  <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                    @click="isPwd = !isPwd" />
                 </template>
               </q-input>
 
-              <q-checkbox
-                v-if="!isSignUp"
-                v-model="credentials.remember"
-                label="Remember me"
-                dense
-              />
+              <q-checkbox v-if="!isSignUp" v-model="credentials.remember" label="Remember me" dense />
 
               <!-- Confirm Password for Sign Up -->
-              <q-input
-                v-if="isSignUp"
-                dense
-                clearable
-                rounded
-                standout
-                v-model="form.passwordConfirmation"
-                :type="isPwd ? 'password' : 'text'"
-                label="Confirm Password"
-              >
+              <q-input v-if="isSignUp" dense clearable rounded standout v-model="form.passwordConfirmation"
+                :type="isPwd ? 'password' : 'text'" label="Confirm Password">
                 <template v-slot:prepend>
                   <q-icon name="lock" />
                 </template>
@@ -120,15 +65,8 @@
 
           <!-- Submit Button -->
           <q-card-actions class="q-px-md">
-            <q-btn
-              rounded
-              dense
-              color="primary"
-              size="lg"
-              class="full-width sf-pro-600"
-              :label="isSignUp ? 'Sign Up' : 'Login'"
-              @click="onSubmit"
-            />
+            <q-btn rounded dense color="primary" size="lg" class="full-width sf-pro-600"
+              :label="isSignUp ? 'Sign Up' : 'Login'" @click="onSubmit" />
           </q-card-actions>
 
           <!-- Toggle between Sign In and Sign Up via text -->
@@ -148,10 +86,10 @@
 <script>
 export default {
   name: 'sign-page',
-  data () {
+  data() {
     return {
-      credentials: {email: '', password: '', remember: false}, // vars for login
-      form: {passwordConfirmation: '', name: '', surname: '', nickname: ''}, // vars for register 
+      credentials: { email: '', password: '', remember: false }, // vars for login
+      form: { passwordConfirmation: '', name: '', surname: '', nickname: '' }, // vars for register 
       isPwd: true,
       isSignUp: false // Flag to toggle between sign-in and sign-up
     }
@@ -175,18 +113,20 @@ export default {
       }
     },
 
-    onSubmit () {
+    onSubmit() {
       if (this.isSignUp) {
-        const temp = {email: this.credentials.email, 
-                      password: this.credentials.password, 
-                      passwordConfirmation: this.form.passwordConfirmation,
-                      name: this.form.name,
-                      nickname: this.form.nickname}
+        const temp = {
+          email: this.credentials.email,
+          password: this.credentials.password,
+          passwordConfirmation: this.form.passwordConfirmation,
+          name: this.form.name,
+          nickname: this.form.nickname
+        }
         this.$store.dispatch('auth/register', temp)
           .then(() => this.isSignUp = !this.isSignUp)
-    }
+      }
       else
-        this.$store.dispatch('auth/login', this.credentials).then(() => this.$router.push(this.redirectTo))
+        this.$store.dispatch('auth/login', this.credentials).then(() => this.$router.push('/test'))
     }
   }
 }
@@ -195,7 +135,8 @@ export default {
 <style>
 .q-card {
   width: 100%;
-  max-width: 350px; /* Maximum width to make it responsive */
+  max-width: 350px;
+  /* Maximum width to make it responsive */
   border-radius: 20px;
   background-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 10px #ffffff;
@@ -204,7 +145,8 @@ export default {
 
 @media (max-width: 600px) {
   .q-card {
-    max-width: 300px; /* Reduce card size for smaller screens */
+    max-width: 300px;
+    /* Reduce card size for smaller screens */
   }
 }
 
@@ -216,16 +158,23 @@ export default {
 
 /* Style for the header container */
 .header-container {
-  display: flex; /* Use flexbox to arrange items */
-  align-items: center; /* Align items vertically */
-  justify-content: center; /* Center horizontally */
-  margin-bottom: 10px; /* Space below header */
+  display: flex;
+  /* Use flexbox to arrange items */
+  align-items: center;
+  /* Align items vertically */
+  justify-content: center;
+  /* Center horizontally */
+  margin-bottom: 10px;
+  /* Space below header */
 }
 
 /* Style for the ping image */
 .ping-image {
-  width: auto; /* Maintain original width */
-  height: 50px; /* Set height to 50px */
-  margin-left: 10px; /* Space between text and image */
+  width: auto;
+  /* Maintain original width */
+  height: 50px;
+  /* Set height to 50px */
+  margin-left: 10px;
+  /* Space between text and image */
 }
 </style>

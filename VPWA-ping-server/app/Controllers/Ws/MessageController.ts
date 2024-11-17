@@ -15,7 +15,16 @@ export default class MessageController {
     constructor(private messageRepository: MessageRepositoryContract) { }
 
     public async loadMessages({ params }: WsContextContract) {
-        return this.messageRepository.getAll(params.name)
+        console.log('Loading messages for channel:', params.name)
+
+        try {
+            const messages = await this.messageRepository.getAll(params.name)
+            console.log('Retrieved messages:', messages)
+            return messages
+        } catch (error) {
+            console.error('Error loading messages:', error)
+            throw error
+        }
     }
 
     public async addMessage({ params, socket, auth }: WsContextContract, content: string) {
@@ -43,7 +52,7 @@ export default class MessageController {
         return user.channels.map(channel => ({
             id: channel.id,
             name: channel.name,
-            ownerId: channel.owner_id,
+            ownerId: channel.ownerId,
             isPrivate: channel.isPrivate,
             messageCount: channel.$extras.messages_count,
             lastMessage: channel.messages[0] || null

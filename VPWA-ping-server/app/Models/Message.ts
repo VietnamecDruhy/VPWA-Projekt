@@ -13,7 +13,7 @@ export default class Message extends BaseModel {
   @column()
   public channelId: number;
 
-  @column()
+  @column({ columnName: 'message' })
   public content: string;
 
   @column.dateTime({ autoCreate: true })
