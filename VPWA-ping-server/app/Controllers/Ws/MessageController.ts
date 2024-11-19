@@ -14,15 +14,18 @@ import User from "App/Models/User";
 export default class MessageController {
     constructor(private messageRepository: MessageRepositoryContract) { }
 
-    public async loadMessages({ params }: WsContextContract) {
+    public async loadMessages({ params, socket }: WsContextContract) {
         console.log('Loading messages for channel:', params.name)
 
         try {
             const messages = await this.messageRepository.getAll(params.name)
-            console.log('Retrieved messages:', messages)
+            console.log('Retrieved messages:', messages[0]?.content)
+            // Use socket.io callback mechanism
+            socket.emit('loadMessages:response', messages)
             return messages
         } catch (error) {
             console.error('Error loading messages:', error)
+            socket.emit('loadMessages:error', error)
             throw error
         }
     }

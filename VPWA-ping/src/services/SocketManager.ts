@@ -153,10 +153,21 @@ export abstract class SocketManager implements SocketManagerContract {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     protected emitAsync<T>(event: string, ...args: any[]): Promise<T> {
         return new Promise((resolve, reject) => {
-            this.socket.emit(event, ...args, ([error, response]: [Error | null, T]) => {
-                error ? reject(error) : resolve(response)
-            })
-        })
+            // Listen for successful response
+            this.socket.once(`${event}:response`, (data) => {
+                console.log(`[${event}] Response received:`, data);
+                resolve(data as T);
+            });
+
+            // Listen for error
+            this.socket.once(`${event}:error`, (error) => {
+                console.error(`[${event}] Error:`, error);
+                reject(error);
+            });
+
+            // Emit the original event
+            this.socket.emit(event, ...args);
+        });
     }
 
     public destroy(): void {

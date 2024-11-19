@@ -5,12 +5,12 @@
 // container binding. See providers/AppProvider.ts for how we are binding the implementation
 declare module '@ioc:Repositories/MessageRepository' {
     export interface SerializedMessage {
-        createdBy: number
-        content: string
-        channelId: number,
-        createdAt: string,
-        updatedAt: string,
-        id: number,
+        id: number;
+        content: string;
+        channelId: number;
+        userId: number;
+        createdAt: string;
+        updatedAt: string;
         author: {
             id: number,
             email: string,
