@@ -89,7 +89,7 @@ export default {
   data() {
     return {
       credentials: { email: '', password: '', remember: false }, // vars for login
-      form: { passwordConfirmation: '', name: '', surname: '', nickname: '' }, // vars for register 
+      form: { passwordConfirmation: '', name: '', surname: '', nickname: '' }, // vars for register
       isPwd: true,
       isSignUp: false // Flag to toggle between sign-in and sign-up
     }
@@ -126,7 +126,7 @@ export default {
           .then(() => this.isSignUp = !this.isSignUp)
       }
       else
-        this.$store.dispatch('auth/login', this.credentials).then(() => this.$router.push('/test'))
+        this.$store.dispatch('auth/login', this.credentials).then(() => this.$router.push('/chat'))
     }
   }
 }

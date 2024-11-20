@@ -14,17 +14,9 @@ interface Group {
   name: string
 }
 
-interface Channel {
-  name: string
-  isPublic: boolean
-  memberCount: number
-}
-
 export default {
   setup() {
     const $q = useQuasar()
-    const leftDrawerOpen = ref(false)
-    const rightDrawerOpen = ref(false)
     const isSmallScreen = ref(false)
     const searchQuery = ref('')
     const chatContainer: Ref<HTMLElement | null> = ref(null)
@@ -37,7 +29,6 @@ export default {
     const MessageMention = ref(false)
     const isDialogOpen = ref(false);
     const newChatName = ref('');
-    const isPrivateChat = ref(false);
 
     const messages: Ref<Message[]> = ref([
       { text: 'Hello! How are you?', from: 'Joe', timestamp: new Date('2023-05-15T14:00:00') },
@@ -92,15 +83,6 @@ export default {
     });
 
 
-    const groups: Ref<Group[]> = ref([
-      { id: 1, name: 'vpwa team' },
-      { id: 2, name: 'Family' },
-      { id: 3, name: 'Friends' },
-      { id: 4, name: 'Work' },
-      { id: 5, name: 'School' },
-      { id: 6, name: 'Skuska af adg ad g ad hg adh a a hwh ' }
-    ])
-
     const chatUsers: Ref<Group[]> = ref([
       { id: 1, name: 'Joe', state: 'online', isAdmin: false },
       { id: 2, name: 'Sarah', state: 'online', isAdmin: false },
@@ -117,16 +99,6 @@ export default {
     })
 
 
-    const currentChannel: Ref<Channel> = ref({
-      name: 'vpwa team',
-      isPublic: false,
-      memberCount: chatUsers.value.length
-    })
-
-    const setUserStatus = (status: string) => {
-      currentUser.value.state = status
-      showNotification(`You are now ${status}`, 'info')
-    }
 
     const scrollToBottom = () => {
       nextTick(() => {
@@ -142,39 +114,39 @@ export default {
     }
 
     const loadMoreMessages = async () => {
-        isLoading.value = true;
+      isLoading.value = true;
 
-        const container = chatContainer.value;
-        if (!container) {
-            console.error('Chat container not found');
-            isLoading.value = false;
-            return;
+      const container = chatContainer.value;
+      if (!container) {
+        console.error('Chat container not found');
+        isLoading.value = false;
+        return;
+      }
+
+      const scrollHeight = container.scrollHeight; // Current height
+      const scrollTop = container.scrollTop; // Current scroll position
+
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const newMessages: Message[] = Array.from({ length: MESSAGES_PER_PAGE }, (_, i) => ({
+        text: `Loaded message ${page.value * MESSAGES_PER_PAGE - i}`,
+        from: i % 2 === 0 ? 'System' : 'OldUser',
+        timestamp: new Date(Date.now() - (page.value * MESSAGES_PER_PAGE - i) * 60000)
+      }));
+
+      // Insert new messages at the beginning
+      messages.value = [...newMessages, ...messages.value];
+
+      nextTick(() => {
+        if (container) {
+          const newScrollHeight = container.scrollHeight;
+          container.scrollTop = newScrollHeight - (scrollHeight - scrollTop);
         }
+        isLoading.value = false;
+      });
 
-        const scrollHeight = container.scrollHeight; // Current height
-        const scrollTop = container.scrollTop; // Current scroll position
-
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const newMessages: Message[] = Array.from({ length: MESSAGES_PER_PAGE }, (_, i) => ({
-            text: `Loaded message ${page.value * MESSAGES_PER_PAGE - i}`,
-            from: i % 2 === 0 ? 'System' : 'OldUser',
-            timestamp: new Date(Date.now() - (page.value * MESSAGES_PER_PAGE - i) * 60000)
-        }));
-
-        // Insert new messages at the beginning
-        messages.value = [...newMessages, ...messages.value];
-
-        nextTick(() => {
-            if (container) {
-                const newScrollHeight = container.scrollHeight;
-                container.scrollTop = newScrollHeight - (scrollHeight - scrollTop);
-            }
-            isLoading.value = false;
-        });
-
-        page.value++;
+      page.value++;
     };
 
 
@@ -195,24 +167,6 @@ export default {
     const openCreateChatDialog = () => {
       isDialogOpen.value = true;
     };
-
-    const createChat = () => {
-      if (newChatName.value.trim()) {
-        const newChat = {
-          name: newChatName.value,
-          isPrivate: isPrivateChat.value,
-        };
-        // Handle new chat creation (e.g., add to chat list, send to server)
-        console.log('New chat created:', newChat);
-
-        // Reset form and close dialog
-        newChatName.value = '';
-        isPrivateChat.value = false;
-        isDialogOpen.value = false;
-      }
-    };
-
-
 
     onMounted(() => {
       checkScreenSize()
@@ -237,24 +191,8 @@ export default {
       }
     })
 
-    const toggleLeftDrawer = () => {
-      leftDrawerOpen.value = !leftDrawerOpen.value
-    }
-
-    const toggleRightDrawer = () => {
-      rightDrawerOpen.value = !rightDrawerOpen.value
-    }
-
     const formatTime = (timestamp: Date): string => {
       return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-    }
-
-    const truncateText = (text: string): string => {
-      const maxTextLength = 18
-      if (text.length > maxTextLength) {
-        return text.substring(0, maxTextLength) + '...'
-      }
-      return text
     }
 
     const handleInput = () => {
@@ -327,9 +265,6 @@ export default {
         timestamp: new Date()
       });
     };
-
-
-
 
     const showNotification = (message: string, type: string = 'info', timeout: number = 0) => {
       console.log('$q object:', $q)
@@ -418,30 +353,20 @@ export default {
       }
     }
 
-
-
     return {
-      leftDrawerOpen,
-      rightDrawerOpen,
       isSmallScreen,
       searchQuery,
       chatContainer,
       messages,
-      groups,
-      currentChannel,
       text,
       isLoading,
       firstMessage,
-      toggleLeftDrawer,
-      toggleRightDrawer,
       formatTime,
-      truncateText,
       handleInput,
       sendMessage,
       shouldShowDateDivider,
       formatDate,
       currentUser,
-      setUserStatus,
       isTyping,
       isTypingExpanded,
       handleTyping,
@@ -452,9 +377,7 @@ export default {
       formattedMessages,
       isDialogOpen,
       newChatName,
-      isPrivateChat,
       openCreateChatDialog,
-      createChat,
     }
   },
 }
