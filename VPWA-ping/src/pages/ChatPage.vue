@@ -206,7 +206,9 @@
     </q-drawer>
 
     <!-- Main Content -->
+    <q-page-container>
       <MainContent />
+    </q-page-container>
 
   </q-layout>
 </template>

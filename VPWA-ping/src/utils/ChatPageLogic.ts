@@ -1,5 +1,6 @@
 import {ref, Ref,} from 'vue'
 import { useQuasar, QNotifyCreateOptions, } from 'quasar'
+import MainContent from 'components/MainContent.vue';
 
 
 interface Group {
@@ -14,6 +15,8 @@ interface Channel {
 }
 
 export default {
+  components: {MainContent},
+
   setup() {
     const $q = useQuasar()
     const leftDrawerOpen = ref(false)
