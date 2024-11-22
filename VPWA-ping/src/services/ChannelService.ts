@@ -12,6 +12,10 @@ class ChannelSocketManager extends SocketManager {
         this.socket.on('message', (message: SerializedMessage) => {
             store.commit('channels/NEW_MESSAGE', { channel, message })
         })
+
+        this.socket.on('loadChannels:response', (channels) => {
+            store.commit('channels/SET_JOINED_CHANNELS', channels)
+        })
     }
 
     public addMessage(message: RawMessage): Promise<SerializedMessage> {
@@ -19,13 +23,25 @@ class ChannelSocketManager extends SocketManager {
     }
 
     public loadMessages(): Promise<SerializedMessage[]> {
-        console.log('Channel Service: Loading Messages')
         return this.emitAsync('loadMessages')
+    }
+
+    public loadChannels(): Promise<void> {
+        return this.emitAsync('loadChannels')
     }
 }
 
 class ChannelService {
     private channels: Map<string, ChannelSocketManager> = new Map()
+    private rootChannel: ChannelSocketManager
+
+    constructor() {
+        this.rootChannel = new ChannelSocketManager('/')
+    }
+
+    public loadChannels(): Promise<void> {
+        return this.rootChannel.loadChannels()
+    }
 
     public join(name: string): ChannelSocketManager {
         if (this.channels.has(name)) {

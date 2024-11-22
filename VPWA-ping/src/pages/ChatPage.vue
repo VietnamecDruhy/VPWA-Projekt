@@ -6,7 +6,7 @@
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title class="q-pa-none sf-pro-700" style="text-align: center;">
-          {{ currentChannel.name }} {{ currentChannel.isPublic ? '🌍' : '🔒' }}
+          {{ activeChannel.active }} {{ activeChannel.isPrivate ? '🌍' : '🔒' }}
         </q-toolbar-title>
 
         <q-btn dense flat round icon="settings" @click="toggleRightDrawer" />
@@ -34,17 +34,17 @@
       <q-list bordered>
 
         <!-- Create Chat Button -->
-        <q-item clickable v-ripple @click="openCreateChatDialog" class="text-white">
+        <!-- <q-item clickable v-ripple @click="openCreateChatDialog" class="text-white">
           <q-item-section avatar>
             <q-icon name="group_add" color="white" />
           </q-item-section>
           <q-item-section>
             <q-item-label>Create Chat</q-item-label>
           </q-item-section>
-        </q-item>
+        </q-item> -->
 
         <!-- Create Chat Dialog -->
-        <q-dialog v-model="isDialogOpen">
+        <!-- <q-dialog v-model="isDialogOpen">
           <q-card dark flat style="min-width: 300px;">
             <q-card-section>
               <div class="text-h6">Create New Chat</div>
@@ -71,19 +71,27 @@
               <q-btn label="Create" color="primary" @click="createChat" :disable="!newChatName.trim()" />
             </q-card-actions>
           </q-card>
-        </q-dialog>
+        </q-dialog> -->
 
-        <q-item v-for="group in groups" :key="group.id" class="text-white sf-pro-600" clickable v-ripple>
+        <q-item 
+          v-for="(channel, index) in channels" 
+          :key="index" 
+          class="text-white sf-pro-600" 
+          clickable 
+          v-ripple
+          @click="selectChannel(channel)"
+          :class="{ 'bg-primary': selectedChannel === channel }"
+        >
           <q-item-section avatar>
             <q-avatar color="secondary" text-color="white" class="q-mb-xs sf-pro-400 inset-shadow-down">
-              {{ group.name.charAt(0).toUpperCase() }}
+              {{ channel }}
             </q-avatar>
           </q-item-section>
           <q-item-section>
-            <q-item-label>{{ truncateText(group.name) }}</q-item-label>
+            <q-item-label>{{ truncateText(channel) }}</q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn flat round dense icon="sms" color="white" @click="sendMessage" />
+            <!-- <q-btn flat round dense icon="sms" color="white" @click="sendMessage" /> -->
           </q-item-section>
         </q-item>
       </q-list>
@@ -121,12 +129,12 @@
 
         <q-item class="q-mb-xs">
           <q-item-section avatar>
-            <q-icon :name="currentChannel.isPublic ? 'public' : 'lock'" color="white" />
+            <q-icon :name="activeChannel.isPrivate ? 'public' : 'lock'" color="white" />
           </q-item-section>
           <q-item-section>
-            <q-item-label class="text-white">{{ currentChannel.name }}</q-item-label>
+            <q-item-label class="text-white">{{ activeChannel.active }}</q-item-label>
             <q-item-label caption class="text-grey-5">
-              {{ currentChannel.isPublic ? 'Public' : 'Private' }} Channel
+              {{ activeChannel.isPrivate ? 'Public' : 'Private' }} Channel
             </q-item-label>
           </q-item-section>
         </q-item>
@@ -136,7 +144,7 @@
             <q-icon name="group" color="white" />
           </q-item-section>
           <q-item-section>
-            <q-item-label class="text-white">{{ currentChannel.memberCount }} members</q-item-label>
+            <q-item-label class="text-white">{{ 5 }} members</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -205,16 +213,120 @@
       </q-list>
     </q-drawer>
 
-    <!-- Main Content -->
-      <MainContent />
+    <!-- Channel Messages -->
+    <q-page-container>
+      <ChatComponent :active-channel="selectedChannel" />
+    </q-page-container>
 
   </q-layout>
 </template>
 
-<script lang="ts">
-import ChatPage from '../utils/ChatPageLogic'
-export default ChatPage
+<script setup lang="ts">
+  // import ChatPage from '../utils/ChatPageLogic';
+  import ChatComponent from '../components/ChatComponent.vue';
+  import { ref, Ref, onMounted, computed } from 'vue'
+  import { useQuasar, QNotifyCreateOptions, } from 'quasar'
+  import { useStore } from 'src/store';
+  import ChannelService from 'src/services/ChannelService'
 
+  // define store
+  const store = useStore()
+
+  // active channel TO DO: move to shared.ts later
+  const activeChannel = computed(() => store.state.channels)
+
+  console.log(store.state.channels)
+
+  // joined channels
+  const channels = computed(() => store.getters['channels/joinedChannels'] || [])
+  const selectedChannel = ref(channels.value[0]) // Initialize with first channel
+
+  const selectChannel = (channel: string) => {
+    selectedChannel.value = channel
+  }
+  // misc !!!
+
+  // toggle drawers
+  const leftDrawerOpen = ref(false)
+  const rightDrawerOpen = ref(false)
+
+  const toggleLeftDrawer = () => {
+    leftDrawerOpen.value = !leftDrawerOpen.value
+  }
+
+  const toggleRightDrawer = () => {
+    rightDrawerOpen.value = !rightDrawerOpen.value
+  }
+
+  // temp
+
+  const $q = useQuasar()
+
+  const searchQuery = ref('')
+  const isDialogOpen = ref(false);
+  const newChatName = ref('');
+  const isPrivateChat = ref(false);
+
+  onMounted(async () => {
+    await ChannelService.loadChannels()
+  })
+
+  // Current logged-in user's profile
+  const currentUser: Ref<{ id: number; name: string; state: string; }> = ref({
+    id: 5,
+    name: 'Fero',
+    state: 'online',
+  })
+
+
+  const setUserStatus = (status: string) => {
+    currentUser.value.state = status
+    showNotification(`You are now ${status}`, 'info')
+  }
+
+  const openCreateChatDialog = () => {
+    isDialogOpen.value = true;
+  };
+
+  const createChat = () => {
+    if (newChatName.value.trim()) {
+      const newChat = {
+        name: newChatName.value,
+        isPrivate: isPrivateChat.value,
+      };
+      // Handle new chat creation (e.g., add to chat list, send to server)
+      console.log('New chat created:', newChat);
+
+      // Reset form and close dialog
+      newChatName.value = '';
+      isPrivateChat.value = false;
+      isDialogOpen.value = false;
+    }
+  };
+
+  const formatTime = (timestamp: Date): string => {
+    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+
+  const truncateText = (text: string): string => {
+    const maxTextLength = 18
+    if (text.length > maxTextLength) {
+      return text.substring(0, maxTextLength) + '...'
+    }
+    return text
+  }
+
+  const showNotification = (message: string, type: string = 'info', timeout: number = 0) => {
+    console.log('$q object:', $q)
+    const notifyOptions: QNotifyCreateOptions = {
+      message: message,
+      position: 'top',
+      color: type,
+      timeout: timeout,
+      actions: [{ icon: 'close', color: 'white' }]
+    }
+    $q.notify(notifyOptions)
+  }
 </script>
 
 <style scoped>

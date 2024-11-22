@@ -15,18 +15,12 @@ export default class MessageController {
     constructor(private messageRepository: MessageRepositoryContract) { }
 
     public async loadMessages({ params, socket }: WsContextContract) {
-        console.log('Loading messages for channel:', params.name)
-
         try {
             const messages = await this.messageRepository.getAll(params.name)
-            console.log('Retrieved messages:', messages[0]?.content)
-            // Use socket.io callback mechanism
             socket.emit('loadMessages:response', messages)
-            return messages
         } catch (error) {
             console.error('Error loading messages:', error)
             socket.emit('loadMessages:error', error)
-            throw error
         }
     }
 
@@ -35,30 +29,33 @@ export default class MessageController {
         // broadcast message to other users in channel
         socket.broadcast.emit('message', message)
         // return message to sender
-        return message
+        socket.emit('message', message)
     }
 
-    public async getUserChannels(userId: number) {
-        const user = await User.find(userId);
-        if (!user) {
-            throw new Error('User not found');
+    // channel 
+    public async loadChannels({ socket, auth }: WsContextContract) {
+        try {
+            // Get the authenticated user and load their channels
+            const user = await User.query()
+                .where('id', auth.user!.id)
+                .preload('channels', (query) => {
+                    query.select(['id', 'name', 'is_private']);
+                })
+                .firstOrFail();
+
+            console.log(user.$preloaded.channels);
+
+            // Extract channels and send them back
+            const channels = user.channels.map(channel => ({
+                id: channel.id,
+                name: channel.name,
+                isPrivate: channel.isPrivate
+            }))
+
+            socket.emit('loadChannels:response', channels)
+        } catch (error) {
+            console.error('Error loading channels:', error)
+            socket.emit('loadChannels:error', error)
         }
-
-        await user.load('channels', (query) => {
-            query.select(['id', 'name', 'owner_id', 'isPrivate'])
-                .withCount('messages')
-                .preload('messages', (messagesQuery) => {
-                    messagesQuery.orderBy('created_at', 'desc').limit(1);
-                });
-        });
-
-        return user.channels.map(channel => ({
-            id: channel.id,
-            name: channel.name,
-            ownerId: channel.ownerId,
-            isPrivate: channel.isPrivate,
-            messageCount: channel.$extras.messages_count,
-            lastMessage: channel.messages[0] || null
-        }));
     }
 }

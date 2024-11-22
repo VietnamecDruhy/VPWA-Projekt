@@ -21,7 +21,8 @@ export interface LoginCredentials {
 
 export interface User {
     id: number
+    nickname: string
     email: string
-    createdAt: string,
+    createdAt: string
     updatedAt: string
 }

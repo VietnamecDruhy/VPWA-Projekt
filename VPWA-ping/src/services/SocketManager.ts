@@ -4,6 +4,7 @@ import type { StateInterface } from 'src/store'
 import { Manager, Socket } from 'socket.io-client'
 import { authManager } from '.'
 
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type BootParams<T extends BootCallback<StateInterface> = BootCallback<StateInterface>> = T extends (params: infer P) => any ? P : never
 
@@ -155,7 +156,6 @@ export abstract class SocketManager implements SocketManagerContract {
         return new Promise((resolve, reject) => {
             // Listen for successful response
             this.socket.once(`${event}:response`, (data) => {
-                console.log(`[${event}] Response received:`, data);
                 resolve(data as T);
             });
 

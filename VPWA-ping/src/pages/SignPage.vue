@@ -84,52 +84,78 @@
 </template>
 
 <script>
-export default {
-  name: 'sign-page',
-  data() {
-    return {
+import { defineComponent, reactive, toRefs, onMounted } from 'vue';
+import { useStore } from 'src/store';
+import { useRouter } from 'vue-router';
+
+export default defineComponent({
+  name: 'SignPage',
+  setup() {
+    const store = useStore(); // Access the Vuex store
+    const router = useRouter(); // Access the router
+
+    // Reactive state for the form
+    const state = reactive({
       credentials: { email: '', password: '', remember: false }, // vars for login
       form: { passwordConfirmation: '', name: '', surname: '', nickname: '' }, // vars for register
       isPwd: true,
-      isSignUp: false // Flag to toggle between sign-in and sign-up
-    }
-  },
-  methods: {
-    toggleForm() {
-      this.isSignUp = !this.isSignUp;
-      this.resetForm(); // Reset form when toggling between sign in/sign up
-    },
-    resetForm() {
-      this.credentials = {
+      isSignUp: false, // Flag to toggle between sign-in and sign-up
+    });
+
+    const toggleForm = () => {
+      state.isSignUp = !state.isSignUp;
+      resetForm();
+    };
+
+    // Reset form data
+    const resetForm = () => {
+      state.credentials = {
         email: '',
         password: '',
-        remember: false
-      }
-      this.form = {
+        remember: false,
+      };
+      state.form = {
         passwordConfirmation: '',
         name: '',
         surname: '',
-        nickname: ''
-      }
-    },
+        nickname: '',
+      };
+    };
 
-    onSubmit() {
-      if (this.isSignUp) {
+    // Handle form submission
+    const onSubmit = () => {
+      if (state.isSignUp) {
         const temp = {
-          email: this.credentials.email,
-          password: this.credentials.password,
-          passwordConfirmation: this.form.passwordConfirmation,
-          name: this.form.name,
-          nickname: this.form.nickname
-        }
-        this.$store.dispatch('auth/register', temp)
-          .then(() => this.isSignUp = !this.isSignUp)
+          email: state.credentials.email,
+          password: state.credentials.password,
+          passwordConfirmation: state.form.passwordConfirmation,
+          name: state.form.name,
+          nickname: state.form.nickname,
+        };
+        store
+          .dispatch('auth/register', temp)
+          .then(() => (state.isSignUp = !state.isSignUp));
+      } else {
+        store
+          .dispatch('auth/login', state.credentials)
+          .then(() => router.push('/chat'));
       }
-      else
-        this.$store.dispatch('auth/login', this.credentials).then(() => this.$router.push('/chat'))
-    }
-  }
-}
+    };
+
+
+    onMounted(() => {
+      console.log('Hello')
+      console.log('Store Getters:', store.getters)
+    })
+
+    return {
+      ...toRefs(state), // Expose state properties individually for template binding
+      toggleForm,
+      resetForm,
+      onSubmit,
+    };
+  },
+});
 </script>
 
 <style>

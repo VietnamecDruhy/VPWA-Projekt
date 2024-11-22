@@ -20,8 +20,9 @@ Ws.namespace('/')
     console.log('websocket greeted: ', socket.id, msg)
     return 'hi'
   })
+  .on("loadChannels", "MessageController.loadChannels");
 
 Ws.namespace("channels/:name")
   .on("loadMessages", "MessageController.loadMessages")
   .on("addMessage", "MessageController.addMessage")
-  .on("getUserChannels", "MessageController.getUserChannels");
+

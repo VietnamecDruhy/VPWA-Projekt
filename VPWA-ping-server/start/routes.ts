@@ -26,14 +26,6 @@ Route.get('/', async () => {
   return { hello: 'world' }
 })
 
-Route.get('/api/test-connection', async () => {
-  return {
-    status: 'success',
-    message: 'Hello from Adonis!',
-    timestamp: new Date()
-  }
-})
-
 Route.group(() => {
   Route.post('register', 'AuthController.register')
   Route.post('login', 'AuthController.login')

@@ -1,6 +1,6 @@
-import {ref, Ref,} from 'vue'
+import { ref, Ref, onMounted } from 'vue'
 import { useQuasar, QNotifyCreateOptions, } from 'quasar'
-
+import { useStore } from 'vuex';
 
 interface Group {
   id: number
@@ -23,7 +23,12 @@ export default {
     const isDialogOpen = ref(false);
     const newChatName = ref('');
     const isPrivateChat = ref(false);
+    const store = useStore();
 
+    onMounted(() => {
+      console.log('Hello');
+      console.log('Store Getters:', store);
+    });
 
     const groups: Ref<Group[]> = ref([
       { id: 1, name: 'general' },
@@ -43,7 +48,7 @@ export default {
     ])
 
     // Current logged-in user's profile
-    const currentUser: Ref<{ id: number; name: string; state: string;}> = ref({
+    const currentUser: Ref<{ id: number; name: string; state: string; }> = ref({
       id: 5,
       name: 'Fero',
       state: 'online',

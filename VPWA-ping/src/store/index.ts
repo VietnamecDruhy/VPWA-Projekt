@@ -8,7 +8,9 @@ import {
   useStore as vuexUseStore,
 } from 'vuex'
 import type { AuthStateInterface } from './module-auth/state'
+import type { ChannelsStateInterface } from './module-channels/state'
 import auth from './module-auth'
+import channels from './module-channels'
 
 
 
@@ -29,6 +31,7 @@ export interface StateInterface {
   // example: ExampleStateInterface;
   // Declared as unknown to avoid linting issue. Best to strongly type as per the line above.
   auth: AuthStateInterface
+  channels: ChannelsStateInterface
 }
 
 // provide typings for `this.$store`
@@ -52,7 +55,8 @@ declare module 'vuex' {
 export default store(function (/* { ssrContext } */) {
   const Store = createStore<StateInterface>({
     modules: {
-      auth
+      auth,
+      channels
     },
 
     // enable strict mode (adds overhead!)

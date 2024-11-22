@@ -7,10 +7,10 @@ export default class Message extends BaseModel {
   @column({ isPrimary: true })
   public id: number;
 
-  @column()
+  @column({ columnName: 'user_id' })
   public userId: number;
 
-  @column()
+  @column({ columnName: 'channel_id' })
   public channelId: number;
 
   @column({ columnName: 'message' })

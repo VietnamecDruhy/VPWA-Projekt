@@ -4,8 +4,9 @@ import { SerializedMessage } from 'src/contracts'
 export interface ChannelsStateInterface {
   loading: boolean,
   error: Error | null,
-  messages: { [channel: string]: SerializedMessage[] }
-  active: string | null
+  messages: { [channel: string]: SerializedMessage[] },
+  active: string | null,
+  isPrivate: boolean
 }
 
 function state(): ChannelsStateInterface {
@@ -13,7 +14,8 @@ function state(): ChannelsStateInterface {
     loading: false,
     error: null,
     messages: {},
-    active: null
+    active: null,
+    isPrivate: false
   }
 }
 

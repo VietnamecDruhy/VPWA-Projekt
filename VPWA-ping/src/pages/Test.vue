@@ -68,9 +68,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onUnmounted } from 'vue'
+import { defineComponent, ref, onUnmounted, onMounted } from 'vue'
 import ChannelService from 'src/services/ChannelService'
 import { SerializedMessage } from 'src/contracts'
+import { useStore } from 'src/store';
+
 
 export default defineComponent({
   name: 'TestPage',
@@ -83,6 +85,14 @@ export default defineComponent({
     const loading = ref(false)
     const joiningChannel = ref(false)
     const newMessage = ref('')
+
+    const store = useStore();
+
+
+    onMounted(() => {
+      console.log('Hello')
+      console.log('Store Getters:', store.getters)
+    })
 
     // Cleanup on component unmount
     onUnmounted(() => {
