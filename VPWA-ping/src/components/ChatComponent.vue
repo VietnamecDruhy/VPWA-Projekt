@@ -108,12 +108,17 @@
   const chatContainer = ref<HTMLElement | null>(null)
 
   watch(messages, () => {
+    const latestMessage = messages.value[messages.value.length - 1];
+    if (latestMessage?.author.id === currentUser.value?.id) {
+      text.value = '';
+    }
+
     nextTick(() => {
       if (chatContainer.value) {
-        chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
       }
-    })
-  }, { deep: true })
+    });
+  }, { deep: true });
 
   // TO DO: INFINITE SCROLL
   const isLoading = ref(false)
@@ -156,8 +161,7 @@
             console.error('Unrecognized command:', command)
           }
         } else {
-          await sendMessage()  // Trigger the message sending logic
-          text.value = ''
+          await sendMessage()
         }
       }
     }
@@ -183,12 +187,16 @@
   }
 
   const sendMessage = async () => {
+  try {
     await store.dispatch('channels/addMessage', {
       channel: props.activeChannel,
       message: text.value
-    })
-    text.value = ''
-  }
+    });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    }
+  };
+
 
 
   // misc

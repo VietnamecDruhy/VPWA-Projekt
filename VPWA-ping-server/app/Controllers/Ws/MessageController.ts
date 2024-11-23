@@ -43,8 +43,6 @@ export default class MessageController {
                 })
                 .firstOrFail();
 
-            console.log(user.$preloaded.channels);
-
             // Extract channels and send them back
             const channels = user.channels.map(channel => ({
                 id: channel.id,
