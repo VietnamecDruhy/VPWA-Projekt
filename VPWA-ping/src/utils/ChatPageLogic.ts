@@ -14,6 +14,8 @@ interface Channel {
 }
 
 export default {
+  components: { MainContent },
+
   setup() {
     const $q = useQuasar()
     const leftDrawerOpen = ref(false)
