@@ -75,6 +75,7 @@
   import { useQuasar, QNotifyCreateOptions, scroll } from 'quasar'
   import { useStore } from 'src/store';
   import { SerializedMessage } from 'src/contracts'
+  import { handleCommand } from 'src/utils';
 
   // define props
   const props = defineProps<{
@@ -157,34 +158,14 @@
       if (inputText !== '') {
         if (inputText.startsWith('/')) {
           const command = inputText.slice(1).trim().toLowerCase()
-          if (!handleCommand(command)) {
-            console.error('Unrecognized command:', command)
+          if (!handleCommand(command, store)) {
+            console.error('Unrecognized command: ', command)
           }
         } else {
           await sendMessage()
         }
       }
     }
-
-  const handleCommand = (command: string): boolean => {
-    // console.log('Command received:', command)
-    // switch (command) {
-    //   case 'quit':
-    //     quitChat()
-    //     return true
-    //   case 'clear':
-    //     clearChat()
-    //     return true
-    //   case 'help':
-    //     showHelp()
-    //     return true
-    //   // // case 'list':
-    //   // //   showList()
-    //   //   return true
-    //   default:
-        return false
-    // }
-  }
 
   const sendMessage = async () => {
   try {

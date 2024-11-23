@@ -110,19 +110,19 @@
           <q-avatar size="150px" class="q-mb-sm">
             <img src="https://cdn.quasar.dev/img/boy-avatar.png" />
           </q-avatar>
-          <q-item-label header class="text-white text-h6 q-mb-md">{{currentUser.name}}</q-item-label>
+          <q-item-label header class="text-white text-h6 q-mb-md">{{currentUser?.nickname}}</q-item-label>
         </div>
 
         <q-item class="q-mb-xs">
           <q-item-section avatar>
             <q-icon
-              :name="currentUser.state === 'online' ? 'check_circle' : currentUser.state === 'dnd' ? 'do_not_disturb' : 'remove_circle'" color="white"
+              :name="userState === 'online' ? 'check_circle' : userState === 'dnd' ? 'do_not_disturb' : 'remove_circle'" color="white"
             />
           </q-item-section>
           <q-item-section>
             <q-item-label class="text-white">My status</q-item-label>
             <q-item-label caption class="text-grey-5">
-              {{ currentUser.state}}
+              {{ userState}}
             </q-item-label>
           </q-item-section>
         </q-item>
@@ -235,7 +235,10 @@
   // active channel TO DO: move to shared.ts later
   const activeChannel = computed(() => store.state.channels)
 
-  console.log(store.state.channels)
+  // current user
+  const currentUser = store.state.auth.user
+
+  const userState = 'online'
 
   // joined channels
   const channels = computed(() => store.getters['channels/joinedChannels'] || [])
@@ -270,19 +273,6 @@
   onMounted(async () => {
     await ChannelService.loadChannels()
   })
-
-  // Current logged-in user's profile
-  const currentUser: Ref<{ id: number; name: string; state: string; }> = ref({
-    id: 5,
-    name: 'Fero',
-    state: 'online',
-  })
-
-
-  const setUserStatus = (status: string) => {
-    currentUser.value.state = status
-    showNotification(`You are now ${status}`, 'info')
-  }
 
   const openCreateChatDialog = () => {
     isDialogOpen.value = true;
