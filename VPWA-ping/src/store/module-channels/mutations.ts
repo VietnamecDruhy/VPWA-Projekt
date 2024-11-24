@@ -27,14 +27,17 @@ const mutation: MutationTree<ChannelsStateInterface> = {
   SET_JOINED_CHANNELS(state, channels: { id: number, name: string, isPrivate: boolean }[]) {
     // Initialize message arrays for each channel
     channels.forEach(channel => {
+      // Initialize messages array if it doesn't exist
       if (!state.messages[channel.name]) {
-        state.messages[channel.name] = []
+        state.messages[channel.name] = [];
       }
-    })
-  },
 
-  NEW_MESSAGE(state, { channel, message }: { channel: string, message: SerializedMessage }) {
-    state.messages[channel].push(message)
+      // Set the isPrivate status for each channel
+      if (!state.isPrivate) {
+        state.isPrivate = {};
+      }
+      state.isPrivate[channel.name] = channel.isPrivate;
+    });
   }
 }
 

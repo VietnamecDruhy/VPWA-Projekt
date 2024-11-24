@@ -6,7 +6,7 @@
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title class="q-pa-none sf-pro-700" style="text-align: center;">
-          {{ activeChannel.active }} {{ activeChannel.isPrivate ? '🌍' : '🔒' }}
+          {{ activeChannel.active }} {{ activeChannel.isPrivate ? '🔒' : '🌍' }}
         </q-toolbar-title>
 
         <q-btn dense flat round icon="settings" @click="toggleRightDrawer" />
@@ -271,7 +271,8 @@
   const isPrivateChat = ref(false);
 
   onMounted(async () => {
-    await ChannelService.loadChannels()
+    const temp = await ChannelService.loadChannels()
+    console.log('Temp: ', temp)
   })
 
   const openCreateChatDialog = () => {
