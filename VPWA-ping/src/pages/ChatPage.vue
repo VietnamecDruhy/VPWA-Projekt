@@ -271,6 +271,7 @@
   const isPrivateChat = ref(false);
 
   onMounted(async () => {
+    await store.dispatch('channels/join', 'vpwa')
     const temp = await ChannelService.loadChannels()
     console.log('Temp: ', temp)
   })

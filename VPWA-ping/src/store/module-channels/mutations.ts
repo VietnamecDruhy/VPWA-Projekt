@@ -38,6 +38,10 @@ const mutation: MutationTree<ChannelsStateInterface> = {
       }
       state.isPrivate[channel.name] = channel.isPrivate;
     });
+  },
+
+  NEW_MESSAGE(state, { channel, message }: { channel: string, message: SerializedMessage }) {
+    state.messages[channel].push(message)
   }
 }
 

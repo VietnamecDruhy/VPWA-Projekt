@@ -6,7 +6,7 @@ export const handleCommand = (command: string, store: VuexStore<StateInterface>)
     console.log('Command received:', command)
     switch (command) {
         case 'join':
-            joinChannel()
+            joinChannel(channel)
             return true
         case 'cancel':
             leaveChannel()
@@ -33,4 +33,10 @@ export const handleCommand = (command: string, store: VuexStore<StateInterface>)
             return false
     }
 }
+
+// const joinChannel = (channel) {
+//     await store.dispatch('channels/join', channel)
+// }
+
+
 
