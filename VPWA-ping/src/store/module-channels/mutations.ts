@@ -10,7 +10,13 @@ const mutation: MutationTree<ChannelsStateInterface> = {
   },
   LOADING_SUCCESS(state, { channel, messages }: { channel: string, messages: SerializedMessage[] }) {
     state.loading = false
-    state.messages[channel] = messages
+    // Initialize messages array if it doesn't exist
+    if (!state.messages[channel]) {
+      state.messages[channel] = messages
+    } else {
+      state.messages[channel] = [...messages, ...state.messages[channel]]
+      // console.log('Mutations: ', state.messages[channel])
+    }
   },
   LOADING_ERROR(state, error) {
     state.loading = false
@@ -25,7 +31,6 @@ const mutation: MutationTree<ChannelsStateInterface> = {
   },
 
   SET_JOINED_CHANNELS(state, channels: { id: number, name: string, isPrivate: boolean }[]) {
-    // Initialize message arrays for each channel
     channels.forEach(channel => {
       // Initialize messages array if it doesn't exist
       if (!state.messages[channel.name]) {
@@ -39,9 +44,23 @@ const mutation: MutationTree<ChannelsStateInterface> = {
       state.isPrivate[channel.name] = channel.isPrivate;
     });
   },
-
   NEW_MESSAGE(state, { channel, message }: { channel: string, message: SerializedMessage }) {
     state.messages[channel].push(message)
+  },
+
+  SET_TYPING(state, { channel, user, isTyping }) {
+    if (!state.typingUsers[channel]) {
+      state.typingUsers[channel] = {}
+    }
+
+    if (isTyping) {
+      state.typingUsers[channel][user.id] = {
+        user,
+        timestamp: Date.now()
+      }
+    } else {
+      delete state.typingUsers[channel][user.id]
+    }
   }
 }
 

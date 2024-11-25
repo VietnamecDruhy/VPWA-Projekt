@@ -3,13 +3,29 @@ import type { MessageRepositoryContract, SerializedMessage } from '@ioc:Reposito
 import Channel from 'App/Models/Channel'
 
 export default class MessageRepository implements MessageRepositoryContract {
-    public async getAll(channelName: string): Promise<SerializedMessage[]> {
+    public async getAll(
+        channelName: string,
+        messageId?: string
+    ): Promise<SerializedMessage[]> {
         const channel = await Channel.query()
             .where('name', channelName)
-            .preload('messages', (messagesQuery) => messagesQuery.preload('author'))
+            .preload('messages', (messagesQuery) => {
+                messagesQuery
+                    .orderBy('id', 'desc')
+                    .limit(30)
+                    .preload('author')
+
+                if (messageId) {
+                    const id = parseInt(messageId)
+                    messagesQuery
+                        .where('id', '<', id)
+                        .andWhere('id', '>', id - 31)
+                }
+            })
             .firstOrFail()
 
-        return channel.messages.map((message) => {
+        // Since we ordered by desc, we need to reverse to show oldest first in chat
+        return channel.messages.reverse().map((message) => {
             const serialized = message.serialize();
             return {
                 id: serialized.id,

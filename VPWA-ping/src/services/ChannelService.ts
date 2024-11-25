@@ -16,14 +16,26 @@ class ChannelSocketManager extends SocketManager {
         this.socket.on('loadChannels:response', (channels) => {
             store.commit('channels/SET_JOINED_CHANNELS', channels)
         })
+
+        this.socket.on('typing:start', (user) => {
+            store.commit('channels/SET_TYPING', { channel, user, isTyping: true })
+        })
+
+        this.socket.on('typing:stop', (user) => {
+            store.commit('channels/SET_TYPING', { channel, user, isTyping: false })
+        })
+    }
+
+    public emitTyping(isTyping: boolean): void {
+        this.socket.emit(isTyping ? 'typing:start' : 'typing:stop')
     }
 
     public addMessage(message: RawMessage): Promise<SerializedMessage> {
         return this.emitAsync('addMessage', message)
     }
 
-    public loadMessages(): Promise<SerializedMessage[]> {
-        return this.emitAsync('loadMessages')
+    public loadMessages(messageId?: string): Promise<SerializedMessage[]> {
+        return this.emitAsync('loadMessages', { messageId })
     }
 
     public loadChannels(): Promise<void> {

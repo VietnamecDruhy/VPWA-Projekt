@@ -14,9 +14,9 @@ import User from "App/Models/User";
 export default class MessageController {
     constructor(private messageRepository: MessageRepositoryContract) { }
 
-    public async loadMessages({ params, socket }: WsContextContract) {
+    public async loadMessages({ params, socket }: WsContextContract, { messageId }: { messageId?: string } = {}) {
         try {
-            const messages = await this.messageRepository.getAll(params.name)
+            const messages = await this.messageRepository.getAll(params.name, messageId)
             socket.emit('loadMessages:response', messages)
         } catch (error) {
             console.error('Error loading messages:', error)
@@ -49,6 +49,8 @@ export default class MessageController {
                 name: channel.name,
                 isPrivate: channel.isPrivate
             }))
+
+            console.log(channels)
 
             socket.emit('loadChannels:response', channels)
         } catch (error) {

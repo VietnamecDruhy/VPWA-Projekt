@@ -36,14 +36,12 @@
       </div>
 
       <div class="typing-indicator-container">
-        <div v-if="isTyping" class="typing-indicator q-px-md" @click="toggleTypingExpansion">
-          <template v-if="isTypingExpanded">
-            <span>{{ text }}</span>
-          </template>
-          <template v-else>
-            <span>{{ currentUser?.nickname }} is typing...</span>
-          </template>
-        </div>
+          <div v-if="activeTypers.length > 0" class="typing-indicator q-px-md">
+              <span>
+                  {{ activeTypers.join(', ') }}
+                  {{ activeTypers.length === 1 ? 'is' : 'are' }} typing...
+              </span>
+          </div>
       </div>
 
       <div class="chat-input-bar">
@@ -71,11 +69,13 @@
   // import ChatComponent from '../utils/ChatComponentLogic'
   // export default ChatComponent
 
-  import { ref, nextTick, onUnmounted, watch, Ref, computed, defineComponent } from 'vue'
+  import { ref, nextTick, onMounted, onUnmounted, watch, Ref, computed, defineComponent } from 'vue'
   import { useQuasar, QNotifyCreateOptions, scroll } from 'quasar'
   import { useStore } from 'src/store';
   import { SerializedMessage } from 'src/contracts'
   import { handleCommand } from 'src/utils';
+  import { channelService } from 'src/services';
+
 
   // define props
   const props = defineProps<{
@@ -84,6 +84,64 @@
 
   // define store
   const store = useStore()
+
+  // Infinite scroll
+  let isLoading = false;  // Flag to prevent multiple simultaneous loads
+
+  const infiniteScroll = async () => {
+  if (isLoading) return;
+  
+  const container = chatContainer.value;
+  if (!container || messages.value.length === 0) return;
+  
+  // Only trigger when near the top (within 100px) 
+  if (container.scrollTop < 100 && messages.value.length >= 30) {
+    isLoading = true;
+    
+    // Store the current scroll positions
+    const scrollHeight = container.scrollHeight;
+    const scrollTop = container.scrollTop;
+    
+    try {
+      // Get oldest message for reference
+      const oldestMessage = messages.value[0];
+      
+      // Add loading delay for UX
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      // Dispatch action to load more messages
+      await store.dispatch('channels/loadMoreMessages', {
+        channel: props.activeChannel,
+        timestamp: oldestMessage.createdAt,
+        messageId: oldestMessage.id
+      });
+      
+      // After store update, wait for DOM to update
+      await nextTick(() => {
+        if (container) {
+          // Calculate the new scroll position
+          const newScrollHeight = container.scrollHeight;
+          const heightDifference = newScrollHeight - scrollHeight;
+          
+          // Adjust scroll position to maintain user's view
+          container.scrollTop = scrollTop + heightDifference;
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error loading more messages:', error);
+    } finally {
+      isLoading = false;
+    }
+  }
+};
+
+  // On mount add a event listener for loading new messages 
+  onMounted(() => {
+    if (chatContainer.value) {
+      chatContainer.value.addEventListener('scroll', infiniteScroll)
+    }
+  })
 
   // watch join channel to load messages, create socket to listen for new messages
   watch(() => props.activeChannel, async (newChannel) => {
@@ -94,7 +152,10 @@
   }, { immediate: true })
 
   // get messages through store
-  const messages = computed(() => store.getters['channels/currentMessages'] || [])
+  const messages = computed(() => {
+      const msgs = store.getters['channels/currentMessages'] || [];
+      return msgs;
+  })
 
   // current user
   const currentUser = computed(() => store.state.auth.user)
@@ -109,47 +170,54 @@
   const chatContainer = ref<HTMLElement | null>(null)
 
   watch(messages, () => {
-    const latestMessage = messages.value[messages.value.length - 1];
-    if (latestMessage?.author.id === currentUser.value?.id) {
-      text.value = '';
-    }
-
-    nextTick(() => {
-      if (chatContainer.value) {
-        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+      const currentMessage = messages.value[messages.value.length - 1];
+      
+      if (currentMessage.author.id === currentUser.value?.id) {
+          text.value = '';
       }
-    });
+      
+      nextTick(() => {
+          if (chatContainer.value) {
+              chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+          }
+      });
+
   }, { deep: true });
 
-  // TO DO: INFINITE SCROLL
-  const isLoading = ref(false)
 
   // typing watcher
   const text = ref('')
-  const isTyping = ref(false)
-  const isTypingExpanded = ref(false)
-  // const typingTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+  const TYPING_TIMEOUT = 3000
+  let typingTimeout: ReturnType<typeof setTimeout> | null = null
 
-  // const TYPING_TIMEOUT = 5000 // 30 seconds in milliseconds
+  const typingUsers = computed(() => {
+      return store.state.channels.typingUsers[props.activeChannel] || {}
+  })
 
-  // const handleTyping = () => {
-  //   console.log('Handle typing:')
-  //   isTyping.value = true
+  const activeTypers = computed(() => {
+      const now = Date.now()
+      return Object.values(typingUsers.value)
+          .filter(typer => now - typer.timestamp < TYPING_TIMEOUT)
+          .map(typer => typer.user.nickname)
+          .filter(nickname => nickname !== currentUser.value?.nickname)
+  })
 
-  //   // Clear existing timeout
-  //   if (typingTimeout.value) {
-  //     clearTimeout(typingTimeout.value)
-  //   }
-
-  //   // Set new timeout
-  //   typingTimeout.value = setTimeout(() => {
-  //     isTyping.value = false
-  //     isTypingExpanded.value = false
-  //   }, TYPING_TIMEOUT)
-  // }
-  const toggleTypingExpansion = () => {
-    isTypingExpanded.value = !isTypingExpanded.value
-  }
+  // Update text watcher
+  watch(text, (newValue) => {
+      if (!props.activeChannel) return
+      
+      if (newValue.trim()) {
+          channelService.in(props.activeChannel)?.emitTyping(true)
+          
+          if (typingTimeout) clearTimeout(typingTimeout)
+          typingTimeout = setTimeout(() => {
+              channelService.in(props.activeChannel)?.emitTyping(false)
+          }, TYPING_TIMEOUT)
+      } else {
+          if (typingTimeout) clearTimeout(typingTimeout)
+          channelService.in(props.activeChannel)?.emitTyping(false)
+      }
+  })
 
   // send message
   const handleInput = async () => {

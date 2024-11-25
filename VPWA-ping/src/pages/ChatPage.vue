@@ -6,7 +6,7 @@
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title class="q-pa-none sf-pro-700" style="text-align: center;">
-          {{ activeChannel.active }} {{ activeChannel.isPrivate ? '🔒' : '🌍' }}
+          {{ activeChannel.active }} {{ isPrivate ? '🔒' : '🌍' }}
         </q-toolbar-title>
 
         <q-btn dense flat round icon="settings" @click="toggleRightDrawer" />
@@ -129,12 +129,12 @@
 
         <q-item class="q-mb-xs">
           <q-item-section avatar>
-            <q-icon :name="activeChannel.isPrivate ? 'public' : 'lock'" color="white" />
+            <q-icon :name="isPrivate ? 'public' : 'lock'" color="white" />
           </q-item-section>
           <q-item-section>
             <q-item-label class="text-white">{{ activeChannel.active }}</q-item-label>
             <q-item-label caption class="text-grey-5">
-              {{ activeChannel.isPrivate ? 'Public' : 'Private' }} Channel
+              {{ isPrivate ? 'Public' : 'Private' }} Channel
             </q-item-label>
           </q-item-section>
         </q-item>
@@ -235,6 +235,13 @@
   // active channel TO DO: move to shared.ts later
   const activeChannel = computed(() => store.state.channels)
 
+  // public or private
+  const isPrivate = computed(() => {
+    if (!activeChannel.value.active) return false; 
+
+    return store.state.channels.isPrivate[activeChannel.value.active]
+  });
+
   // current user
   const currentUser = store.state.auth.user
 
@@ -242,11 +249,12 @@
 
   // joined channels
   const channels = computed(() => store.getters['channels/joinedChannels'] || [])
-  const selectedChannel = ref(channels.value[0]) // Initialize with first channel
+  const selectedChannel = ref(channels.value[0])
 
   const selectChannel = (channel: string) => {
     selectedChannel.value = channel
   }
+
   // misc !!!
 
   // toggle drawers
@@ -271,9 +279,7 @@
   const isPrivateChat = ref(false);
 
   onMounted(async () => {
-    await store.dispatch('channels/join', 'vpwa')
-    const temp = await ChannelService.loadChannels()
-    console.log('Temp: ', temp)
+    await ChannelService.loadChannels()
   })
 
   const openCreateChatDialog = () => {

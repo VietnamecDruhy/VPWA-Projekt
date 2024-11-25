@@ -7,6 +7,14 @@ export interface ChannelsStateInterface {
   messages: { [channel: string]: SerializedMessage[] },
   active: string | null,
   isPrivate: { [channel: string]: boolean },
+  typingUsers: {
+    [channel: string]: {
+      [userId: string]: {
+        user: any,
+        timestamp: number
+      }
+    }
+  }
 }
 
 function state(): ChannelsStateInterface {
@@ -15,7 +23,8 @@ function state(): ChannelsStateInterface {
     error: null,
     messages: {},
     active: null,
-    isPrivate: {}
+    isPrivate: {},
+    typingUsers: {}
   }
 }
 
