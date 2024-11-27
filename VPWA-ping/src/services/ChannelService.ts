@@ -18,7 +18,13 @@ class ChannelSocketManager extends SocketManager {
         })
 
         this.socket.on('typing:start', (user) => {
-            store.commit('channels/SET_TYPING', { channel, user, isTyping: true })
+            console.log('Channel Socket: ', user)
+
+            store.commit('channels/SET_TYPING', {
+                channel,
+                user: user,
+                isTyping: true
+            })
         })
 
         this.socket.on('typing:stop', (user) => {
@@ -26,8 +32,9 @@ class ChannelSocketManager extends SocketManager {
         })
     }
 
-    public emitTyping(isTyping: boolean): void {
-        this.socket.emit(isTyping ? 'typing:start' : 'typing:stop')
+    public emitTyping(isTyping: boolean, content?: string): void {
+        console.log('Channel Service: ', content)
+        this.socket.emit(isTyping ? 'typing:start' : 'typing:stop', { content })
     }
 
     public addMessage(message: RawMessage): Promise<SerializedMessage> {

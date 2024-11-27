@@ -49,6 +49,7 @@ const mutation: MutationTree<ChannelsStateInterface> = {
   },
 
   SET_TYPING(state, { channel, user, isTyping }) {
+    console.log('Mutations: ', user)
     if (!state.typingUsers[channel]) {
       state.typingUsers[channel] = {}
     }

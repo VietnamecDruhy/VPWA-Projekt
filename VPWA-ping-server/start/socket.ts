@@ -25,4 +25,6 @@ Ws.namespace('/')
 Ws.namespace("channels/:name")
   .on("loadMessages", "MessageController.loadMessages")
   .on("addMessage", "MessageController.addMessage")
+  .on("typing:start", "MessageController.handleTypingStart")
+  .on("typing:stop", "MessageController.handleTypingStop")
 

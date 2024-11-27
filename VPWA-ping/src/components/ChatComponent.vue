@@ -38,8 +38,7 @@
       <div class="typing-indicator-container">
           <div v-if="activeTypers.length > 0" class="typing-indicator q-px-md">
               <span>
-                  {{ activeTypers.join(', ') }}
-                  {{ activeTypers.length === 1 ? 'is' : 'are' }} typing...
+                  {{ activeTypers.map(t => `${t.nickname}: ${t.content || 'is typing...'}`).join(', ') }}
               </span>
           </div>
       </div>
@@ -89,52 +88,52 @@
   let isLoading = false;  // Flag to prevent multiple simultaneous loads
 
   const infiniteScroll = async () => {
-  if (isLoading) return;
-  
-  const container = chatContainer.value;
-  if (!container || messages.value.length === 0) return;
-  
-  // Only trigger when near the top (within 100px) 
-  if (container.scrollTop < 100 && messages.value.length >= 30) {
-    isLoading = true;
+    if (isLoading) return;
     
-    // Store the current scroll positions
-    const scrollHeight = container.scrollHeight;
-    const scrollTop = container.scrollTop;
+    const container = chatContainer.value;
+    if (!container || messages.value.length === 0) return;
     
-    try {
-      // Get oldest message for reference
-      const oldestMessage = messages.value[0];
+    // Only trigger when near the top (within 100px) 
+    if (container.scrollTop < 100 && messages.value.length >= 30) {
+      isLoading = true;
       
-      // Add loading delay for UX
-      await new Promise(resolve => setTimeout(resolve, 400));
+      // Store the current scroll positions
+      const scrollHeight = container.scrollHeight;
+      const scrollTop = container.scrollTop;
       
-      // Dispatch action to load more messages
-      await store.dispatch('channels/loadMoreMessages', {
-        channel: props.activeChannel,
-        timestamp: oldestMessage.createdAt,
-        messageId: oldestMessage.id
-      });
-      
-      // After store update, wait for DOM to update
-      await nextTick(() => {
-        if (container) {
-          // Calculate the new scroll position
-          const newScrollHeight = container.scrollHeight;
-          const heightDifference = newScrollHeight - scrollHeight;
-          
-          // Adjust scroll position to maintain user's view
-          container.scrollTop = scrollTop + heightDifference;
-        }
-      });
-      
-    } catch (error) {
-      console.error('Error loading more messages:', error);
-    } finally {
-      isLoading = false;
+      try {
+        // Get oldest message for reference
+        const oldestMessage = messages.value[0];
+        
+        // Add loading delay for UX
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // Dispatch action to load more messages
+        await store.dispatch('channels/loadMoreMessages', {
+          channel: props.activeChannel,
+          timestamp: oldestMessage.createdAt,
+          messageId: oldestMessage.id
+        });
+        
+        // After store update, wait for DOM to update
+        await nextTick(() => {
+          if (container) {
+            // Calculate the new scroll position
+            const newScrollHeight = container.scrollHeight;
+            const heightDifference = newScrollHeight - scrollHeight;
+            
+            // Adjust scroll position to maintain user's view
+            container.scrollTop = scrollTop + heightDifference;
+          }
+        });
+        
+      } catch (error) {
+        console.error('Error loading more messages:', error);
+      } finally {
+        isLoading = false;
+      }
     }
-  }
-};
+  };
 
   // On mount add a event listener for loading new messages 
   onMounted(() => {
@@ -190,33 +189,36 @@
   const TYPING_TIMEOUT = 3000
   let typingTimeout: ReturnType<typeof setTimeout> | null = null
 
-  const typingUsers = computed(() => {
-      return store.state.channels.typingUsers[props.activeChannel] || {}
-  })
+    const typingUsers = computed(() => {
+        return store.state.channels.typingUsers[props.activeChannel] || {}
+    })
 
-  const activeTypers = computed(() => {
-      const now = Date.now()
-      return Object.values(typingUsers.value)
-          .filter(typer => now - typer.timestamp < TYPING_TIMEOUT)
-          .map(typer => typer.user.nickname)
-          .filter(nickname => nickname !== currentUser.value?.nickname)
-  })
+    const activeTypers = computed(() => {
+        const now = Date.now()
+        return Object.entries(typingUsers.value)
+            .filter(([_, typer]) => now - typer.timestamp < TYPING_TIMEOUT)
+            .filter(([_, typer]) => typer.user.nickname !== currentUser.value?.nickname)
+            .map(([_, typer]) => ({
+                nickname: typer.user.nickname,
+                content: typer.user.content.content
+            }))
+    })
 
   // Update text watcher
   watch(text, (newValue) => {
-      if (!props.activeChannel) return
-      
-      if (newValue.trim()) {
-          channelService.in(props.activeChannel)?.emitTyping(true)
-          
-          if (typingTimeout) clearTimeout(typingTimeout)
-          typingTimeout = setTimeout(() => {
-              channelService.in(props.activeChannel)?.emitTyping(false)
-          }, TYPING_TIMEOUT)
-      } else {
-          if (typingTimeout) clearTimeout(typingTimeout)
-          channelService.in(props.activeChannel)?.emitTyping(false)
-      }
+    if (!props.activeChannel) return
+    
+    if (newValue.trim()) {
+        channelService.in(props.activeChannel)?.emitTyping(true, newValue)
+        
+        if (typingTimeout) clearTimeout(typingTimeout)
+        typingTimeout = setTimeout(() => {
+            channelService.in(props.activeChannel)?.emitTyping(false)
+        }, TYPING_TIMEOUT)
+    } else {
+        if (typingTimeout) clearTimeout(typingTimeout)
+        channelService.in(props.activeChannel)?.emitTyping(false)
+    }
   })
 
   // send message

@@ -58,4 +58,22 @@ export default class MessageController {
             socket.emit('loadChannels:error', error)
         }
     }
+
+    public async handleTypingStart({ socket, auth }: WsContextContract, data: string) {
+        console.log(data)
+        const user = auth.user!;
+        socket.broadcast.emit('typing:start', {
+            id: user.id,
+            nickname: user.nickname,
+            content: data
+        });
+    }
+
+    public async handleTypingStop({ socket, auth }: WsContextContract) {
+        const user = auth.user!;
+        socket.broadcast.emit('typing:stop', {
+            id: user.id,
+            nickname: user.nickname
+        });
+    }
 }
