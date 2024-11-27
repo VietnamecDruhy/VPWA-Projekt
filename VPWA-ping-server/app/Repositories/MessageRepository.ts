@@ -67,4 +67,5 @@ export default class MessageRepository implements MessageRepositoryContract {
             }
         } as SerializedMessage;
     }
+
 }

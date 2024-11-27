@@ -73,18 +73,18 @@
           </q-card>
         </q-dialog> -->
 
-        <q-item 
-          v-for="(channel, index) in channels" 
-          :key="index" 
-          class="text-white sf-pro-600" 
-          clickable 
+        <q-item
+          v-for="(channel, index) in channels"
+          :key="index"
+          class="text-white sf-pro-600"
+          clickable
           v-ripple
           @click="selectChannel(channel)"
           :class="{ 'bg-primary': selectedChannel === channel }"
         >
           <q-item-section avatar>
             <q-avatar color="secondary" text-color="white" class="q-mb-xs sf-pro-400 inset-shadow-down">
-              {{ channel }}
+              {{ channel.charAt(0).toUpperCase() }}
             </q-avatar>
           </q-item-section>
           <q-item-section>

@@ -1,6 +1,7 @@
 import { ref, Ref, onMounted } from 'vue'
 import { useQuasar, QNotifyCreateOptions, } from 'quasar'
 import { useStore } from 'vuex';
+import ChatComponent from 'src/components/ChatComponent.vue';
 
 interface Group {
   id: number
@@ -14,7 +15,7 @@ interface Channel {
 }
 
 export default {
-  components: { MainContent },
+  components: { ChatComponent },
 
   setup() {
     const $q = useQuasar()

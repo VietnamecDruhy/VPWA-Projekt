@@ -1,42 +1,49 @@
-import { Store as VuexStore } from 'vuex'
-import { StateInterface } from 'src/store'
+import { Store as VuexStore } from 'vuex';
+import { StateInterface } from 'src/store';
 
+export const handleCommand = (command: string, store: VuexStore<StateInterface>) => {
+  console.log('Command received:', command);
 
-export const handleCommand = (command: string, store: VuexStore<StateInterface>): boolean => {
-    console.log('Command received:', command)
-    switch (command) {
-        case 'join':
-            joinChannel(channel)
-            return true
-        case 'cancel':
-            leaveChannel()
-            return true
-        case 'invite':
-            inviteUser()
-            return true
-        case 'revoke':
-            revokeUser()
-            return true
-        case 'quit':
-            destroyChannel()
-            return true
-        case 'help':
-            showHelp()
-            return true
-        case 'test':
-            console.log('Testing commands')
-            return true
-        // // case 'list':
-        // //   showList()
-        //   return true
-        default:
-            return false
-    }
-}
+  // Split command into main command and arguments
+  const [mainCommand, ...args] = command.split(' ');
 
-// const joinChannel = (channel) {
-//     await store.dispatch('channels/join', channel)
-// }
+  switch (mainCommand) {
+    case 'join':
+      if (args.length == 1) {
+        store.dispatch('channels/join', args[0]);
+        return true;
+      }
+    case 'leave':
+      leaveChannel();
+      return true;
+
+    case 'invite':
+      inviteUser();
+      return true;
+
+    case 'revoke':
+      revokeUser();
+      return true;
+
+    case 'quit':
+      destroyChannel();
+      return true;
+
+    case 'help':
+      showHelp();
+      return true;
+
+    case 'test':
+      console.log('Testing commands');
+      return true;
+
+    // Add more cases as needed
+
+    default:
+      console.log('Unknown command:', mainCommand);
+      return false;
+  }
+};
 
 
 
