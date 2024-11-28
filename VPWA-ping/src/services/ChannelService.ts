@@ -10,6 +10,10 @@ class ChannelSocketManager extends SocketManager {
     public subscribe({ store }: BootParams): void {
         const channel = this.namespace.split('/').pop() as string
 
+        this.socket.on('loadMessages:error', (error) => {
+          console.error('Socket loadMessages error:', error);
+        });
+
         this.socket.on('message', (message: SerializedMessage) => {
             store.commit('channels/NEW_MESSAGE', { channel, message })
         })
@@ -42,8 +46,8 @@ class ChannelSocketManager extends SocketManager {
         return this.emitAsync('addMessage', message)
     }
 
-    public loadMessages(messageId?: string): Promise<SerializedMessage[]> {
-        return this.emitAsync('loadMessages', { messageId })
+    public loadMessages(messageId?: string, isPrivate?: boolean): Promise<SerializedMessage[]> {
+      return this.emitAsync('loadMessages', { messageId, isPrivate })
     }
 
     public loadChannels(): Promise<void> {
@@ -64,14 +68,15 @@ class ChannelService {
     }
 
     public join(name: string): ChannelSocketManager {
-        if (this.channels.has(name)) {
-            throw new Error(`User is already joined in channel "${name}"`)
-        }
+      console.log('ChannelService join called for:', name) // Debug log
+      if (this.channels.has(name)) {
+        throw new Error(`User is already joined in channel "${name}"`)
+      }
 
-        // connect to given channel namespace
-        const channel = new ChannelSocketManager(`/channels/${name}`)
-        this.channels.set(name, channel)
-        return channel
+      const channel = new ChannelSocketManager(`/channels/${name}`)
+      console.log('New socket manager created for channel:', name) // Debug log
+      this.channels.set(name, channel)
+      return channel
     }
 
     public leave(name: string): boolean {

@@ -3,6 +3,8 @@ import type { WsContextContract } from '@ioc:Ruby184/Socket.IO/WsContext'
 import type { MessageRepositoryContract } from '@ioc:Repositories/MessageRepository'
 import { inject } from '@adonisjs/core/build/standalone'
 import User from "App/Models/User";
+import Channel from "App/Models/Channel";
+import Database from '@ioc:Adonis/Lucid/Database';
 
 // inject repository from container to controller constructor
 // we do so because we can extract database specific storage to another class
@@ -14,15 +16,46 @@ import User from "App/Models/User";
 export default class MessageController {
     constructor(private messageRepository: MessageRepositoryContract) { }
 
-    public async loadMessages({ params, socket }: WsContextContract, { messageId }: { messageId?: string } = {}) {
-        try {
-            const messages = await this.messageRepository.getAll(params.name, messageId)
-            socket.emit('loadMessages:response', messages)
-        } catch (error) {
-            console.error('Error loading messages:', error)
-            socket.emit('loadMessages:error', error)
+  public async loadMessages({ params, socket, auth }: WsContextContract, { messageId, isPrivate }: { messageId?: string, isPrivate?: boolean } = {}) {
+    try {
+      const name = params.name.split('/').pop();
+      let channel = await Channel.query().where('name', name).preload('users').first();
+
+      if (!channel) {
+        // Only create new channel if isPrivate is explicitly set
+        if (isPrivate === undefined) {
+          throw new Error('Channel does not exist');
         }
+        channel = await Channel.create({
+          name,
+          ownerId: auth.user!.id,
+          isPrivate: isPrivate,
+        });
+      }
+
+      const userIsInChannel = await Database
+        .from('channel_users')
+        .where('channel_id', channel.id)
+        .andWhere('user_id', auth.user!.id)
+        .first();
+
+      if (!userIsInChannel) {
+        await Database.table('channel_users').insert({
+          channel_id: channel.id,
+          user_id: auth.user!.id,
+          created_at: new Date(Date.now()),
+          updated_at: new Date(Date.now()),
+        });
+      }
+
+      const messages = await this.messageRepository.getAll(name, messageId);
+      socket.join(name);
+      socket.emit('loadMessages:response', messages);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      socket.emit('loadMessages:error', { message: error.message });
     }
+  }
 
     public async addMessage({ params, socket, auth }: WsContextContract, content: string) {
         const message = await this.messageRepository.create(params.name, auth.user!.id, content)
@@ -32,7 +65,7 @@ export default class MessageController {
         socket.emit('message', message)
     }
 
-    // channel 
+    // channel
     public async loadChannels({ socket, auth }: WsContextContract) {
         try {
             // Get the authenticated user and load their channels

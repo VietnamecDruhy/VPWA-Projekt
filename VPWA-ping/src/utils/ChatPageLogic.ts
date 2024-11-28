@@ -78,10 +78,7 @@ export default {
           name: newChatName.value,
           isPrivate: isPrivateChat.value,
         };
-        // Handle new chat creation (e.g., add to chat list, send to server)
-        console.log('New chat created:', newChat);
 
-        // Reset form and close dialog
         newChatName.value = '';
         isPrivateChat.value = false;
         isDialogOpen.value = false;

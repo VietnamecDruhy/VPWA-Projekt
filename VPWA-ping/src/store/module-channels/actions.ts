@@ -5,13 +5,23 @@ import { ChannelsStateInterface } from './state'
 import { channelService } from 'src/services'
 import { RawMessage } from 'src/contracts'
 
+interface JoinChannelParams {
+  channel: string;
+  isPrivate: boolean;
+}
+
 const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
-  async join({ commit }, channel: string) {
+  async join({ commit }, params: string | JoinChannelParams) {
     try {
       commit('LOADING_START')
-      const messages = await channelService.join(channel).loadMessages()
-      commit('LOADING_SUCCESS', { channel, messages })
-      console.log('Joined channel:', channel)
+      const channelName = typeof params === 'string' ? params : params.channel
+      const isPrivate = typeof params !== 'string' ? params.isPrivate : undefined
+
+      const channelManager = await channelService.join(channelName)
+      const messages = await channelManager.loadMessages(undefined, isPrivate)
+
+      commit('LOADING_SUCCESS', { channel: channelName, messages, isPrivate })
+      console.log('Joined channel:', channelName)
     } catch (err) {
       commit('LOADING_ERROR', err)
       throw err

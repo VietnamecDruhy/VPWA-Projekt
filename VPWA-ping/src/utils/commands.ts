@@ -2,17 +2,34 @@ import { Store as VuexStore } from 'vuex';
 import { StateInterface } from 'src/store';
 
 export const handleCommand = (command: string, store: VuexStore<StateInterface>) => {
-  console.log('Command received:', command);
-
-  // Split command into main command and arguments
   const [mainCommand, ...args] = command.split(' ');
 
   switch (mainCommand) {
-    case 'join':
-      if (args.length == 1) {
-        store.dispatch('channels/join', args[0]);
-        return true;
+    case 'join': {
+      if (args.length === 0) {
+        console.log('Usage: /join <channel_name> [private|public]');
+        return false;
       }
+
+      const channelName = args[0];
+
+      if (args[1]) {
+        const privacy = args[1].toLowerCase();
+        if (privacy !== 'private' && privacy !== 'public') {
+          console.log('Invalid privacy setting. Use "private" or "public"');
+          return false;
+        }
+        // Creating new channel
+        store.dispatch('channels/join', {
+          channel: channelName,
+          isPrivate: privacy === 'private'
+        });
+      } else {
+        // Joining existing channel
+        store.dispatch('channels/join', channelName);
+      }
+      return true;
+    }
     case 'leave':
       leaveChannel();
       return true;
