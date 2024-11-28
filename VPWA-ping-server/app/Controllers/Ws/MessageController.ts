@@ -22,7 +22,6 @@ export default class MessageController {
       let channel = await Channel.query().where('name', name).preload('users').first();
 
       if (!channel) {
-        // Only create new channel if isPrivate is explicitly set
         if (isPrivate === undefined) {
           throw new Error('Channel does not exist');
         }
@@ -31,6 +30,9 @@ export default class MessageController {
           ownerId: auth.user!.id,
           isPrivate: isPrivate,
         });
+      } else if (channel.isPrivate && isPrivate === undefined) {
+        // If trying to join existing private channel without invitation
+        throw new Error('Cannot join private channel without invitation');
       }
 
       const userIsInChannel = await Database

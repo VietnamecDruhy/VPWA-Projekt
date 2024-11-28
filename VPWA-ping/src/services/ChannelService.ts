@@ -68,15 +68,21 @@ class ChannelService {
     }
 
     public join(name: string): ChannelSocketManager {
-      console.log('ChannelService join called for:', name) // Debug log
       if (this.channels.has(name)) {
-        throw new Error(`User is already joined in channel "${name}"`)
+        throw new Error(`Already joined in channel "${name}"`);
       }
 
-      const channel = new ChannelSocketManager(`/channels/${name}`)
-      console.log('New socket manager created for channel:', name) // Debug log
-      this.channels.set(name, channel)
-      return channel
+      const channel = new ChannelSocketManager(`/channels/${name}`);
+      this.channels.set(name, channel);
+      return channel;
+    }
+
+    public closeConnection(name: string): void {
+      const channel = this.channels.get(name);
+      if (channel) {
+        channel.destroy();
+        this.channels.delete(name);
+      }
     }
 
     public leave(name: string): boolean {

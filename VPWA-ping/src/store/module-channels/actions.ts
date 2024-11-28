@@ -18,10 +18,14 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
       const isPrivate = typeof params !== 'string' ? params.isPrivate : undefined
 
       const channelManager = await channelService.join(channelName)
-      const messages = await channelManager.loadMessages(undefined, isPrivate)
-
-      commit('LOADING_SUCCESS', { channel: channelName, messages, isPrivate })
-      console.log('Joined channel:', channelName)
+      try {
+        const messages = await channelManager.loadMessages(undefined, isPrivate)
+        commit('LOADING_SUCCESS', { channel: channelName, messages, isPrivate })
+      } catch (error) {
+        // Clean up socket connection if message loading fails
+        channelService.closeConnection(channelName)
+        throw error
+      }
     } catch (err) {
       commit('LOADING_ERROR', err)
       throw err

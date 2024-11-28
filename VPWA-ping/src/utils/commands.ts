@@ -29,7 +29,14 @@ export const handleCommand = (command: string, store: VuexStore<StateInterface>)
           isPrivate: privacy === 'private'
         });
       } else {
-        store.dispatch('channels/join', channelName);
+        store.dispatch('channels/join', channelName)
+          .catch(error => {
+            if (error.message.includes('private')) {
+              console.log(`Cannot join ${channelName}: This is a private channel (invite only)`);
+            } else {
+              console.error('Error joining channel:', error.message);
+            }
+          });
       }
       return true;
     }
