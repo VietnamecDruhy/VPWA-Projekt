@@ -11,6 +11,11 @@ export const handleCommand = (command: string, store: VuexStore<StateInterface>)
         return false;
       }
 
+      if (args.length > 2) {
+        console.log('Too many arguments. Usage: /join <channel_name> [private|public]');
+        return false;
+      }
+
       const channelName = args[0];
 
       if (args[1]) {
@@ -19,17 +24,16 @@ export const handleCommand = (command: string, store: VuexStore<StateInterface>)
           console.log('Invalid privacy setting. Use "private" or "public"');
           return false;
         }
-        // Creating new channel
         store.dispatch('channels/join', {
           channel: channelName,
           isPrivate: privacy === 'private'
         });
       } else {
-        // Joining existing channel
         store.dispatch('channels/join', channelName);
       }
       return true;
     }
+
     case 'leave':
       leaveChannel();
       return true;
