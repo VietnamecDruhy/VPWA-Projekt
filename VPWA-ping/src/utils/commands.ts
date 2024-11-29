@@ -1,8 +1,14 @@
 import { Store as VuexStore } from 'vuex';
 import { StateInterface } from 'src/store';
 
-export const handleCommand = (command: string, store: VuexStore<StateInterface>) => {
+export const handleCommand = async (command: string, store: VuexStore<StateInterface>) => {
   const [mainCommand, ...args] = command.split(' ');
+  const currentChannel = store.state.channels.active;
+
+  if (!currentChannel && !['help'].includes(mainCommand)) {
+    console.log('No active channel');
+    return false;
+  }
 
   switch (mainCommand) {
     case 'join': {
@@ -41,37 +47,71 @@ export const handleCommand = (command: string, store: VuexStore<StateInterface>)
       return true;
     }
 
-    case 'leave':
-      leaveChannel();
-      return true;
+        case 'list': {
+          try {
+            await store.dispatch('channels/listMembers', currentChannel);
+            return true;
+          } catch (error) {
+            console.error('Error listing members:', error instanceof Error ? error.message : 'Unknown error');
+            return false;
+          }
+        }
 
-    case 'invite':
-      inviteUser();
-      return true;
+        case 'cancel': {
+          try {
+            await store.dispatch('channels/leaveChannel', currentChannel);
+            return true;
+          } catch (error) {
+            console.error('Error leaving channel:', error instanceof Error ? error.message : 'Unknown error');
+            return false;
+          }
+        }
 
-    case 'revoke':
-      revokeUser();
-      return true;
+        case 'quit': {
+          try {
+            await store.dispatch('channels/deleteChannel', currentChannel);
+            return true;
+          } catch (error) {
+            console.error('Error deleting channel:', error instanceof Error ? error.message : 'Unknown error');
+            return false;
+          }
+        }
 
-    case 'quit':
-      destroyChannel();
-      return true;
+        case 'revoke': {
+          if (args.length === 0) {
+            console.log('Usage: /revoke <username>');
+            return false;
+          }
 
-    case 'help':
-      showHelp();
-      return true;
+          try {
+            await store.dispatch('channels/revokeUser', {
+              channel: currentChannel,
+              username: args[0]
+            });
+            return true;
+          } catch (error) {
+            console.error('Error revoking user:', error instanceof Error ? error.message : 'Unknown error');
+            return false;
+          }
+        }
 
-    case 'test':
-      console.log('Testing commands');
-      return true;
+        case 'help': {
+          console.log(`
+Available commands:
+/list - Show all members in the current channel
+/cancel - Leave the current channel (deletes channel if you're the owner)
+/quit - Delete the channel (owner only)
+/revoke <username> - Remove a user from the channel (owner only)
+/help - Show this help message
+            `.trim());
+          return true;
+        }
 
-    // Add more cases as needed
-
-    default:
-      console.log('Unknown command:', mainCommand);
-      return false;
-  }
-};
+        default:
+          console.log('Unknown command:', mainCommand);
+          return false;
+      }
+  };
 
 
 

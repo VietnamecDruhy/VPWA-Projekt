@@ -134,7 +134,7 @@
           <q-item-section>
             <q-item-label class="text-white">{{ activeChannel.active }}</q-item-label>
             <q-item-label caption class="text-grey-5">
-              {{ isPrivate ? 'Public' : 'Private' }} Channel
+              {{ isPrivate ? 'Private' : 'Public' }} Channel
             </q-item-label>
           </q-item-section>
         </q-item>
@@ -237,7 +237,7 @@
 
   // public or private
   const isPrivate = computed(() => {
-    if (!activeChannel.value.active) return false; 
+    if (!activeChannel.value.active) return false;
 
     return store.state.channels.isPrivate[activeChannel.value.active]
   });

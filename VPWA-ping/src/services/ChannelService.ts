@@ -2,7 +2,11 @@
 import { RawMessage, SerializedMessage } from 'src/contracts'
 import { BootParams, SocketManager } from './SocketManager'
 
-
+interface ChannelUser {
+  id: number;
+  nickname: string;
+  email: string;
+}
 // creating instance of this class automatically connects to given socket.io namespace
 // subscribe is called with boot params, so you can use it to dispatch actions for socket events
 // you have access to socket.io socket using this.socket
@@ -35,6 +39,38 @@ class ChannelSocketManager extends SocketManager {
         this.socket.on('typing:stop', (user) => {
             store.commit('channels/SET_TYPING', { channel, user, isTyping: false })
         })
+
+        this.socket.on('channelMembers', (members: ChannelUser[]) => {
+          store.commit('channels/SET_CHANNEL_MEMBERS', { channel, members })
+        })
+
+        this.socket.on('channelDeleted', (channelName: string) => {
+          store.commit('channels/CLEAR_CHANNEL', channelName)
+        })
+
+        this.socket.on('leftChannel', (channelName: string) => {
+          store.commit('channels/CLEAR_CHANNEL', channelName)
+        })
+
+        this.socket.on('userRevoked', (data: { channelName: string; username: string }) => {
+          store.commit('channels/REMOVE_CHANNEL_MEMBER', data)
+        })
+    }
+
+    public listMembers(): Promise<ChannelUser[]> {
+      return this.emitAsync('listMembers')
+    }
+
+    public leaveChannel(): Promise<void> {
+      return this.emitAsync('leaveChannel')
+    }
+
+    public deleteChannel(): Promise<void> {
+      return this.emitAsync('deleteChannel')
+    }
+
+    public revokeUser(username: string): Promise<void> {
+      return this.emitAsync('revokeUser', username)
     }
 
     public emitTyping(isTyping: boolean, content?: string): void {

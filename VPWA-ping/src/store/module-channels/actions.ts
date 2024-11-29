@@ -52,7 +52,64 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
       commit('LOADING_ERROR', err)
       throw err
     }
+  },
+
+  async listMembers({ commit }, channel: string) {
+    try {
+      const channelManager = channelService.in(channel);
+      if (!channelManager) {
+        throw new Error('Channel not found');
+      }
+      const members = await channelManager.listMembers();
+      commit('SET_CHANNEL_MEMBERS', { channel, members });
+    } catch (error) {
+      commit('LOADING_ERROR', error);
+      throw error;
+    }
+  },
+
+  async leaveChannel({ commit }, channel: string) {
+    try {
+      const channelManager = channelService.in(channel);
+      if (!channelManager) {
+        throw new Error('Channel not found');
+      }
+      await channelManager.leaveChannel();
+      // The CLEAR_CHANNEL mutation will be called when we receive the channelDeleted event
+    } catch (error) {
+      commit('LOADING_ERROR', error);
+      throw error;
+    }
+  },
+
+  async deleteChannel({ commit }, channel: string) {
+    try {
+      const channelManager = channelService.in(channel);
+      if (!channelManager) {
+        throw new Error('Channel not found');
+      }
+      await channelManager.deleteChannel();
+      // The CLEAR_CHANNEL mutation will be called when we receive the channelDeleted event
+    } catch (error) {
+      commit('LOADING_ERROR', error);
+      throw error;
+    }
+  },
+
+  async revokeUser({ commit }, { channel, username }: { channel: string; username: string }) {
+    try {
+      const channelManager = channelService.in(channel);
+      if (!channelManager) {
+        throw new Error('Channel not found');
+      }
+      await channelManager.revokeUser(username);
+      // The REMOVE_CHANNEL_MEMBER mutation will be called when we receive the userRevoked event
+    } catch (error) {
+      commit('LOADING_ERROR', error);
+      throw error;
+    }
   }
+
 }
 
 export default actions

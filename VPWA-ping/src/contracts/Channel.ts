@@ -7,3 +7,11 @@ export interface Channel {
     createdAt: string;
     updatedAt: string;
 }
+
+export interface ChannelMember {
+  id: number;
+  nickname: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
+}

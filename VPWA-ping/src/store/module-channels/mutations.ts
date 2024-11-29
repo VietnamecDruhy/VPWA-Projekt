@@ -3,6 +3,7 @@ import { SerializedMessage } from 'src/contracts'
 import { MutationTree } from 'vuex'
 import { ChannelsStateInterface } from './state'
 
+
 const mutation: MutationTree<ChannelsStateInterface> = {
   LOADING_START(state) {
     state.loading = true
@@ -21,10 +22,6 @@ const mutation: MutationTree<ChannelsStateInterface> = {
   LOADING_ERROR(state, error) {
     state.loading = false
     state.error = error
-  },
-  CLEAR_CHANNEL(state, channel) {
-    state.active = null
-    delete state.messages[channel]
   },
   SET_ACTIVE(state, channel: string) {
     state.active = channel
@@ -61,6 +58,32 @@ const mutation: MutationTree<ChannelsStateInterface> = {
       }
     } else {
       delete state.typingUsers[channel][user.id]
+    }
+  },
+  SET_CHANNEL_MEMBERS(state, { channel, members }) {
+    if (!state.members) {
+      state.members = {};
+    }
+    state.members[channel] = members;
+  },
+
+  REMOVE_CHANNEL_MEMBER(state, { channelName, username }) {
+    if (state.members && state.members[channelName]) {
+      state.members[channelName] = state.members[channelName].filter(
+        member => member.nickname !== username
+      );
+    }
+  },
+
+  CLEAR_CHANNEL(state, channelName) {
+    if (state.active === channelName) {
+      state.active = null;
+    }
+    if (state.messages) {
+      delete state.messages[channelName];
+    }
+    if (state.members) {
+      delete state.members[channelName];
     }
   }
 }

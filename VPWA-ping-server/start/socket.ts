@@ -28,3 +28,7 @@ Ws.namespace("channels/:name")
   .on("typing:start", "MessageController.handleTypingStart")
   .on("typing:stop", "MessageController.handleTypingStop")
 
+  .on("listMembers", "MessageController.listMembers")
+  .on("leaveChannel", "MessageController.leaveChannel")
+  .on("deleteChannel", "MessageController.deleteChannel")
+  .on("revokeUser", "MessageController.revokeUser")

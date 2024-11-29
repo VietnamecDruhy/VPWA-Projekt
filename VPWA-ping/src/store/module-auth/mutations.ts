@@ -16,6 +16,7 @@ const mutation: MutationTree<AuthStateInterface> = {
     state.status = 'error'
     state.errors = errors
   }
+
 }
 
 export default mutation
