@@ -193,7 +193,9 @@ export default class MessageController {
         socket.emit('leftChannel', channel.name)
       }
 
+      // Clean up socket connection
       socket.leave(params.name)
+      socket.disconnect(true)  // Force disconnect the socket
     } catch (error) {
       console.error('Error leaving channel:', error)
       socket.emit('error', { message: error.message || 'Failed to leave channel' })
@@ -221,7 +223,10 @@ export default class MessageController {
       // Notify all users in the channel
       socket.broadcast.to(params.name).emit('channelDeleted', channel.name)
       socket.emit('channelDeleted', channel.name)
+
+      // Clean up socket connection
       socket.leave(params.name)
+      socket.disconnect(true)  // Force disconnect the socket
     } catch (error) {
       console.error('Error deleting channel:', error)
       socket.emit('error', { message: error.message || 'Failed to delete channel' })

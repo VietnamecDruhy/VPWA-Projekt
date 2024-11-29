@@ -75,12 +75,18 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
         throw new Error('Channel not found');
       }
       await channelManager.leaveChannel();
-      // The CLEAR_CHANNEL mutation will be called when we receive the channelDeleted event
+
+      // Close the socket connection
+      channelService.closeConnection(channel);
+
+      // Clear the channel from state
+      commit('CLEAR_CHANNEL', channel);
     } catch (error) {
       commit('LOADING_ERROR', error);
       throw error;
     }
   },
+
 
   async deleteChannel({ commit }, channel: string) {
     try {
@@ -89,7 +95,12 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
         throw new Error('Channel not found');
       }
       await channelManager.deleteChannel();
-      // The CLEAR_CHANNEL mutation will be called when we receive the channelDeleted event
+
+      // Close the socket connection
+      channelService.closeConnection(channel);
+
+      // Clear the channel from state
+      commit('CLEAR_CHANNEL', channel);
     } catch (error) {
       commit('LOADING_ERROR', error);
       throw error;

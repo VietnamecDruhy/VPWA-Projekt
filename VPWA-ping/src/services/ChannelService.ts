@@ -44,13 +44,23 @@ class ChannelSocketManager extends SocketManager {
           store.commit('channels/SET_CHANNEL_MEMBERS', { channel, members })
         })
 
-        this.socket.on('channelDeleted', (channelName: string) => {
-          store.commit('channels/CLEAR_CHANNEL', channelName)
-        })
+      this.socket.on('channelDeleted', (channelName: string) => {
+        store.commit('channels/CLEAR_CHANNEL', channelName)
+        // Ensure we clean up the channel in the service
+        const service = (this.constructor as any).getService()
+        if (service) {
+          service.closeConnection(channelName)
+        }
+      })
 
-        this.socket.on('leftChannel', (channelName: string) => {
-          store.commit('channels/CLEAR_CHANNEL', channelName)
-        })
+      this.socket.on('leftChannel', (channelName: string) => {
+        store.commit('channels/CLEAR_CHANNEL', channelName)
+        // Ensure we clean up the channel in the service
+        const service = (this.constructor as any).getService()
+        if (service) {
+          service.closeConnection(channelName)
+        }
+      })
 
         this.socket.on('userRevoked', (data: { channelName: string; username: string }) => {
           store.commit('channels/REMOVE_CHANNEL_MEMBER', data)
@@ -61,15 +71,28 @@ class ChannelSocketManager extends SocketManager {
       return this.emitAsync('listMembers')
     }
 
-    public leaveChannel(): Promise<void> {
-      return this.emitAsync('leaveChannel')
+  public async leaveChannel(): Promise<void> {
+    try {
+      await this.emitAsync('leaveChannel')
+      // Socket cleanup will be handled by the channelDeleted/leftChannel events
+    } catch (error) {
+      console.error('Error leaving channel:', error)
+      throw error
     }
+  }
 
-    public deleteChannel(): Promise<void> {
-      return this.emitAsync('deleteChannel')
+  public async deleteChannel(): Promise<void> {
+    try {
+      await this.emitAsync('deleteChannel')
+      // Socket cleanup will be handled by the channelDeleted event
+    } catch (error) {
+      console.error('Error deleting channel:', error)
+      throw error
     }
+  }
 
-    public revokeUser(username: string): Promise<void> {
+
+  public revokeUser(username: string): Promise<void> {
       return this.emitAsync('revokeUser', username)
     }
 
@@ -104,34 +127,32 @@ class ChannelService {
     }
 
     public join(name: string): ChannelSocketManager {
-      if (this.channels.has(name)) {
-        throw new Error(`Already joined in channel "${name}"`);
-      }
+      this.closeConnection(name)
 
       const channel = new ChannelSocketManager(`/channels/${name}`);
       this.channels.set(name, channel);
       return channel;
     }
 
-    public closeConnection(name: string): void {
-      const channel = this.channels.get(name);
-      if (channel) {
-        channel.destroy();
-        this.channels.delete(name);
-      }
+  public closeConnection(name: string): void {
+    const channel = this.channels.get(name)
+    if (channel) {
+      // Disconnect namespace and remove references to socket
+      channel.destroy()
+      this.channels.delete(name)
     }
+  }
 
-    public leave(name: string): boolean {
-        const channel = this.channels.get(name)
-
-        if (!channel) {
-            return false
-        }
-
-        // disconnect namespace and remove references to socket
-        channel.destroy()
-        return this.channels.delete(name)
+  public leave(name: string): boolean {
+    const channel = this.channels.get(name)
+    if (!channel) {
+      return false
     }
+    // Disconnect namespace and remove references to socket
+    channel.destroy()
+    this.channels.delete(name)
+    return true
+  }
 
     public in(name: string): ChannelSocketManager | undefined {
         return this.channels.get(name)
