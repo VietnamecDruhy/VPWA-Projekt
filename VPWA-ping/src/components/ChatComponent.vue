@@ -135,7 +135,7 @@ watch(() => props.activeChannel, async (newChannel) => {
   if (newChannel) {
     store.commit('channels/SET_ACTIVE', newChannel)
     await store.dispatch('channels/join', newChannel)
-    console.log('Joined new channel:', newChannel)
+    await store.dispatch('channels/listMembers', newChannel);
   }
 }, { immediate: true })
 

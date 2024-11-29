@@ -23,47 +23,6 @@
       </q-input>
 
       <q-list bordered>
-
-        <!-- Create Chat Button -->
-        <!-- <q-item clickable v-ripple @click="openCreateChatDialog" class="text-white">
-          <q-item-section avatar>
-            <q-icon name="group_add" color="white" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Create Chat</q-item-label>
-          </q-item-section>
-        </q-item> -->
-
-        <!-- Create Chat Dialog -->
-        <!-- <q-dialog v-model="isDialogOpen">
-          <q-card dark flat style="min-width: 300px;">
-            <q-card-section>
-              <div class="text-h6">Create New Chat</div>
-            </q-card-section>
-
-            <q-card-section>
-              <q-input dark
-                v-model="newChatName"
-                label="Chat Name"
-                placeholder="Enter chat name"
-                dense
-                clearable
-              />
-              <q-toggle
-                v-model="isPrivateChat"
-                label="Private Chat"
-                color="primary"
-                class="q-mt-md"
-              />
-            </q-card-section>
-
-            <q-card-actions align="right">
-              <q-btn flat label="Cancel" color="primary" @click="isDialogOpen = false" />
-              <q-btn label="Create" color="primary" @click="createChat" :disable="!newChatName.trim()" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog> -->
-
         <q-item v-for="(channel, index) in channels" :key="index" class="text-white sf-pro-600" clickable v-ripple
           @click="selectChannel(channel)" :class="{ 'bg-primary': selectedChannel === channel }">
           <q-item-section avatar>
@@ -107,10 +66,10 @@
 
         <q-item class="q-mb-xs">
           <q-item-section avatar>
-            <q-icon :name="isPrivate ? 'public' : 'lock'" color="white" />
+            <q-icon :name="isPrivate ? 'lock' : 'public'" color="white" />
           </q-item-section>
           <q-item-section>
-            <q-item-label class="text-white">{{ activeChannel.active }}</q-item-label>
+            <q-item-label class="text-white">{{ selectedChannel }}</q-item-label>
             <q-item-label caption class="text-grey-5">
               {{ isPrivate ? 'Private' : 'Public' }} Channel
             </q-item-label>
@@ -122,7 +81,7 @@
             <q-icon name="group" color="white" />
           </q-item-section>
           <q-item-section>
-            <q-item-label class="text-white">{{ 5 }} members</q-item-label>
+            <q-item-label class="text-white">{{ memberCount }} members</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -204,10 +163,14 @@ const activeChannel = computed(() => store.state.channels)
 
 // public or private
 const isPrivate = computed(() => {
-  if (!activeChannel.value.active) return false;
-
-  return store.state.channels.isPrivate[activeChannel.value.active]
+  if (!selectedChannel.value) return false;
+  return store.state.channels.isPrivate[selectedChannel.value] ? true : false;
 });
+
+const memberCount = computed(() => {
+  const count = store.state.channels.members[selectedChannel.value]?.length || 0
+  return count
+})
 
 // current user
 const currentUser = store.state.auth.user
