@@ -31,14 +31,6 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
       throw err
     }
   },
-  async leave({ getters, commit }, channel: string | null) {
-    const leaving: string[] = channel !== null ? [channel] : getters.joinedChannels
-
-    leaving.forEach((c) => {
-      channelService.leave(c)
-      commit('CLEAR_CHANNEL', c)
-    })
-  },
   async addMessage({ commit }, { channel, message }: { channel: string, message: RawMessage }) {
     const newMessage = await channelService.in(channel)?.addMessage(message)
     commit('NEW_MESSAGE', { channel, message: newMessage })

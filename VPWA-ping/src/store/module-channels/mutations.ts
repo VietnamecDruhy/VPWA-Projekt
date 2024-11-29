@@ -16,7 +16,6 @@ const mutation: MutationTree<ChannelsStateInterface> = {
       state.messages[channel] = messages
     } else {
       state.messages[channel] = [...messages, ...state.messages[channel]]
-      // console.log('Mutations: ', state.messages[channel])
     }
   },
   LOADING_ERROR(state, error) {
@@ -46,7 +45,6 @@ const mutation: MutationTree<ChannelsStateInterface> = {
   },
 
   SET_TYPING(state, { channel, user, isTyping }) {
-    console.log('Mutations: ', user)
     if (!state.typingUsers[channel]) {
       state.typingUsers[channel] = {}
     }

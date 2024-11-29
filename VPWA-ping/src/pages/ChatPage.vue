@@ -15,17 +15,8 @@
 
     <!-- Left Drawer -->
     <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered class="bg-dark sf-pro-600">
-      <q-input
-        dense
-        debounce="300"
-        placeholder="Search..."
-        v-model="searchQuery"
-        class="search-input q-ma-md"
-        rounded
-        outlined
-        clearable
-        bg-color="white"
-      >
+      <q-input dense debounce="300" placeholder="Search..." v-model="searchQuery" class="search-input q-ma-md" rounded
+        outlined clearable bg-color="white">
         <template v-slot:append>
           <q-icon name="search" />
         </template>
@@ -73,15 +64,8 @@
           </q-card>
         </q-dialog> -->
 
-        <q-item
-          v-for="(channel, index) in channels"
-          :key="index"
-          class="text-white sf-pro-600"
-          clickable
-          v-ripple
-          @click="selectChannel(channel)"
-          :class="{ 'bg-primary': selectedChannel === channel }"
-        >
+        <q-item v-for="(channel, index) in channels" :key="index" class="text-white sf-pro-600" clickable v-ripple
+          @click="selectChannel(channel)" :class="{ 'bg-primary': selectedChannel === channel }">
           <q-item-section avatar>
             <q-avatar color="secondary" text-color="white" class="q-mb-xs sf-pro-400 inset-shadow-down">
               {{ channel.charAt(0).toUpperCase() }}
@@ -98,31 +82,25 @@
     </q-drawer>
 
     <!-- Right Drawer -->
-    <q-drawer
-    show-if-above
-    v-model="rightDrawerOpen"
-    side="right"
-    bordered
-    class="bg-dark"
-    >
+    <q-drawer show-if-above v-model="rightDrawerOpen" side="right" bordered class="bg-dark">
       <q-list class="q-pa-md">
         <div class="text-center q-mt-lg">
           <q-avatar size="150px" class="q-mb-sm">
             <img src="https://cdn.quasar.dev/img/boy-avatar.png" />
           </q-avatar>
-          <q-item-label header class="text-white text-h6 q-mb-md">{{currentUser?.nickname}}</q-item-label>
+          <q-item-label header class="text-white text-h6 q-mb-md">{{ currentUser?.nickname }}</q-item-label>
         </div>
 
         <q-item class="q-mb-xs">
           <q-item-section avatar>
             <q-icon
-              :name="userState === 'online' ? 'check_circle' : userState === 'dnd' ? 'do_not_disturb' : 'remove_circle'" color="white"
-            />
+              :name="userState === 'online' ? 'check_circle' : userState === 'dnd' ? 'do_not_disturb' : 'remove_circle'"
+              color="white" />
           </q-item-section>
           <q-item-section>
             <q-item-label class="text-white">My status</q-item-label>
             <q-item-label caption class="text-grey-5">
-              {{ userState}}
+              {{ userState }}
             </q-item-label>
           </q-item-section>
         </q-item>
@@ -170,19 +148,13 @@
             <q-item-label class="text-white">Mention Only</q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-toggle v-model="MessageMention" color="primary" keep-color/>
+            <q-toggle v-model="MessageMention" color="primary" keep-color />
           </q-item-section>
         </q-item>
 
         <!-- Collapsible notification settings list -->
-        <q-expansion-item
-          v-model="notificationSettingsOpen"
-          icon="notifications"
-          header-class="text-white dark"
-          label="Notification"
-          dense
-          expand-separator
-        >
+        <q-expansion-item v-model="notificationSettingsOpen" icon="notifications" header-class="text-white dark"
+          label="Notification" dense expand-separator>
           <q-list>
             <q-item clickable v-ripple @click="setUserStatus('online')">
               <q-item-section>
@@ -203,12 +175,7 @@
         </q-expansion-item>
 
         <div class="row justify-center">
-          <q-btn
-            color="primary"
-            label="Logout"
-            class="q-mt-md"
-            @click="logout"
-          />
+          <q-btn color="primary" label="Logout" class="q-mt-md" @click="logout" />
         </div>
       </q-list>
     </q-drawer>
@@ -222,109 +189,109 @@
 </template>
 
 <script setup lang="ts">
-  // import ChatPage from '../utils/ChatPageLogic';
-  import ChatComponent from '../components/ChatComponent.vue';
-  import { ref, Ref, onMounted, computed } from 'vue'
-  import { useQuasar, QNotifyCreateOptions, } from 'quasar'
-  import { useStore } from 'src/store';
-  import ChannelService from 'src/services/ChannelService'
+// import ChatPage from '../utils/ChatPageLogic';
+import ChatComponent from '../components/ChatComponent.vue';
+import { ref, Ref, onMounted, computed } from 'vue'
+import { useQuasar, QNotifyCreateOptions, } from 'quasar'
+import { useStore } from 'src/store';
+import ChannelService from 'src/services/ChannelService'
 
-  // define store
-  const store = useStore()
+// define store
+const store = useStore()
 
-  // active channel TO DO: move to shared.ts later
-  const activeChannel = computed(() => store.state.channels)
+// active channel TO DO: move to shared.ts later
+const activeChannel = computed(() => store.state.channels)
 
-  // public or private
-  const isPrivate = computed(() => {
-    if (!activeChannel.value.active) return false;
+// public or private
+const isPrivate = computed(() => {
+  if (!activeChannel.value.active) return false;
 
-    return store.state.channels.isPrivate[activeChannel.value.active]
-  });
+  return store.state.channels.isPrivate[activeChannel.value.active]
+});
 
-  // current user
-  const currentUser = store.state.auth.user
+// current user
+const currentUser = store.state.auth.user
 
-  const userState = 'online'
+const userState = 'online'
 
-  // joined channels
-  const channels = computed(() => store.getters['channels/joinedChannels'] || [])
-  const selectedChannel = ref(channels.value[0])
+// joined channels
+const channels = computed(() => store.getters['channels/joinedChannels'] || [])
+const selectedChannel = ref(channels.value[0])
 
-  const selectChannel = (channel: string) => {
-    selectedChannel.value = channel
+const selectChannel = (channel: string) => {
+  selectedChannel.value = channel
+}
+
+// misc !!!
+
+// toggle drawers
+const leftDrawerOpen = ref(false)
+const rightDrawerOpen = ref(false)
+
+const toggleLeftDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
+
+const toggleRightDrawer = () => {
+  rightDrawerOpen.value = !rightDrawerOpen.value
+}
+
+// temp
+
+const $q = useQuasar()
+
+const searchQuery = ref('')
+const isDialogOpen = ref(false);
+const newChatName = ref('');
+const isPrivateChat = ref(false);
+
+onMounted(async () => {
+  await ChannelService.loadChannels()
+})
+
+const openCreateChatDialog = () => {
+  isDialogOpen.value = true;
+};
+
+const createChat = () => {
+  if (newChatName.value.trim()) {
+    const newChat = {
+      name: newChatName.value,
+      isPrivate: isPrivateChat.value,
+    };
+    // Handle new chat creation (e.g., add to chat list, send to server)
+    console.log('New chat created:', newChat);
+
+    // Reset form and close dialog
+    newChatName.value = '';
+    isPrivateChat.value = false;
+    isDialogOpen.value = false;
   }
+};
 
-  // misc !!!
+const formatTime = (timestamp: Date): string => {
+  return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+}
 
-  // toggle drawers
-  const leftDrawerOpen = ref(false)
-  const rightDrawerOpen = ref(false)
-
-  const toggleLeftDrawer = () => {
-    leftDrawerOpen.value = !leftDrawerOpen.value
+const truncateText = (text: string): string => {
+  const maxTextLength = 18
+  if (text.length > maxTextLength) {
+    return text.substring(0, maxTextLength) + '...'
   }
+  return text
+}
 
-  const toggleRightDrawer = () => {
-    rightDrawerOpen.value = !rightDrawerOpen.value
+const showNotification = (message: string, type: string = 'info', timeout: number = 0) => {
+  console.log('$q object:', $q)
+  const notifyOptions: QNotifyCreateOptions = {
+    message: message,
+    position: 'top',
+    color: type,
+    timeout: timeout,
+    actions: [{ icon: 'close', color: 'white' }]
   }
-
-  // temp
-
-  const $q = useQuasar()
-
-  const searchQuery = ref('')
-  const isDialogOpen = ref(false);
-  const newChatName = ref('');
-  const isPrivateChat = ref(false);
-
-  onMounted(async () => {
-    await ChannelService.loadChannels()
-  })
-
-  const openCreateChatDialog = () => {
-    isDialogOpen.value = true;
-  };
-
-  const createChat = () => {
-    if (newChatName.value.trim()) {
-      const newChat = {
-        name: newChatName.value,
-        isPrivate: isPrivateChat.value,
-      };
-      // Handle new chat creation (e.g., add to chat list, send to server)
-      console.log('New chat created:', newChat);
-
-      // Reset form and close dialog
-      newChatName.value = '';
-      isPrivateChat.value = false;
-      isDialogOpen.value = false;
-    }
-  };
-
-  const formatTime = (timestamp: Date): string => {
-    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-  }
-
-  const truncateText = (text: string): string => {
-    const maxTextLength = 18
-    if (text.length > maxTextLength) {
-      return text.substring(0, maxTextLength) + '...'
-    }
-    return text
-  }
-
-  const showNotification = (message: string, type: string = 'info', timeout: number = 0) => {
-    console.log('$q object:', $q)
-    const notifyOptions: QNotifyCreateOptions = {
-      message: message,
-      position: 'top',
-      color: type,
-      timeout: timeout,
-      actions: [{ icon: 'close', color: 'white' }]
-    }
-    $q.notify(notifyOptions)
-  }
+  $q.notify(notifyOptions)
+}
 </script>
 
 <style scoped>
@@ -335,16 +302,18 @@
 
 }
 
-.me.chat-message{
+.me.chat-message {
   align-items: flex-end;
 }
 
 .message-header .sender {
-  margin-right: 10px; /* Add gap between sender and timestamp */
+  margin-right: 10px;
+  /* Add gap between sender and timestamp */
 }
 
-.message-header{
-  padding-left: 10px; /* Add gap between sender and timestamp */
+.message-header {
+  padding-left: 10px;
+  /* Add gap between sender and timestamp */
   padding-right: 10px;
 }
 
@@ -353,7 +322,8 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin: 40px 0; /* Adds vertical space around the divider */
+  margin: 40px 0;
+  /* Adds vertical space around the divider */
   position: relative;
 }
 
@@ -361,7 +331,8 @@
   padding: 0 10px;
   margin-bottom: 20px;
   font-weight: bold;
-  color: grey; /* Grey font for the date */
+  color: grey;
+  /* Grey font for the date */
 }
 
 .date-divider hr {
@@ -369,7 +340,8 @@
   width: 100%;
   top: 50%;
   border: none;
-  border-top: 1px solid rgba(128, 128, 128, 0.5); /* Slightly transparent grey line */
+  border-top: 1px solid rgba(128, 128, 128, 0.5);
+  /* Slightly transparent grey line */
 }
 
 .chat-container {
@@ -383,14 +355,17 @@
   overflow-y: auto;
   padding: 20px;
 }
+
 .highlighted {
   font-weight: bold;
   color: #F2C037;
 }
 
 .typing-indicator-container {
-  height: 24px; /* Adjust this value based on your design needs */
-  margin-bottom: 8px; /* Add some space between the typing indicator and the input */
+  height: 24px;
+  /* Adjust this value based on your design needs */
+  margin-bottom: 8px;
+  /* Add some space between the typing indicator and the input */
 }
 
 .typing-indicator {
