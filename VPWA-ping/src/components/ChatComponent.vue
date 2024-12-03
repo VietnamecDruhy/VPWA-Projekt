@@ -134,8 +134,7 @@ onMounted(() => {
 watch(() => props.activeChannel, async (newChannel) => {
   if (newChannel) {
     store.commit('channels/SET_ACTIVE', newChannel)
-    await store.dispatch('channels/join', newChannel)
-    await store.dispatch('channels/listMembers', newChannel);
+    store.getters['channels/currentMessages']
   }
 }, { immediate: true })
 

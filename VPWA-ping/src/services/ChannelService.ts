@@ -27,8 +27,6 @@ class ChannelSocketManager extends SocketManager {
     })
 
     this.socket.on('typing:start', (user) => {
-      console.log('Channel Socket: ', user)
-
       store.commit('channels/SET_TYPING', {
         channel,
         user: user,

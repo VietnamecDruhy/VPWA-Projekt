@@ -1,12 +1,7 @@
 // src/store/module-channels/state.ts
 import { SerializedMessage } from 'src/contracts'
+import { User } from 'src/contracts'
 
-// Define the channel user interface
-interface ChannelUser {
-  id: number;
-  nickname: string;
-  email: string;
-}
 
 export interface ChannelsStateInterface {
   loading: boolean,
@@ -14,7 +9,7 @@ export interface ChannelsStateInterface {
   messages: { [channel: string]: SerializedMessage[] },
   active: string | null,
   isPrivate: { [channel: string]: boolean },
-  members: { [channel: string]: ChannelUser[] },  // Add members property
+  members: { [channel: string]: User[] },  // Add members property
   typingUsers: {
     [channel: string]: {
       [userId: string]: {

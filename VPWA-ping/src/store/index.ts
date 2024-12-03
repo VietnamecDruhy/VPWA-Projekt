@@ -9,29 +9,15 @@ import {
 } from 'vuex'
 import type { AuthStateInterface } from './module-auth/state'
 import type { ChannelsStateInterface } from './module-channels/state'
+import type { ActivityStateInterface } from './module-activity/state'
 import auth from './module-auth'
 import channels from './module-channels'
-
-
-
-// import example from './module-example'
-// import { ExampleStateInterface } from './module-example/state';
-
-/*
- * If not building with SSR mode, you can
- * directly export the Store instantiation;
- *
- * The function below can be async too; either use
- * async/await or return a Promise which resolves
- * with the Store instance.
- */
+import activity from './module-activity'
 
 export interface StateInterface {
-  // Define your own store structure, using submodules if needed
-  // example: ExampleStateInterface;
-  // Declared as unknown to avoid linting issue. Best to strongly type as per the line above.
   auth: AuthStateInterface
   channels: ChannelsStateInterface
+  activity: ActivityStateInterface
 }
 
 // provide typings for `this.$store`
@@ -46,7 +32,6 @@ export const storeKey: InjectionKey<VuexStore<StateInterface>> = Symbol('vuex-ke
 
 // Provide typings for `this.$router` inside Vuex stores
 declare module 'vuex' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   export interface Store<S> {
     readonly $router: Router;
   }
@@ -56,7 +41,8 @@ export default store(function (/* { ssrContext } */) {
   const Store = createStore<StateInterface>({
     modules: {
       auth,
-      channels
+      channels,
+      activity
     },
 
     // enable strict mode (adds overhead!)

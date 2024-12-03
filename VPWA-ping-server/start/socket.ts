@@ -8,6 +8,7 @@ Ws.namespace('/')
 Ws.namespace('/activity')
   .connected('ActivityController.onConnected')
   .disconnected('ActivityController.onDisconnected')
+  .on('user:setState', 'ActivityController.setState')
 
 // Channel specific namespace
 Ws.namespace('channels/:name')
