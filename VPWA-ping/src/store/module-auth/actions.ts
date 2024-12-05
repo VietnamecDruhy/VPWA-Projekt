@@ -45,12 +45,13 @@ const actions: ActionTree<AuthStateInterface, StateInterface> = {
       throw err
     }
   },
-  async logout({ commit }) {
+  async logout({ commit, dispatch }) {
     try {
       commit('AUTH_START')
       await authService.logout()
-      commit('AUTH_SUCCESS', null)
-      // remove api token and notify listeners
+
+      this.replaceState(this.state)
+
       authManager.removeToken()
     } catch (err) {
       commit('AUTH_ERROR', err)

@@ -111,7 +111,7 @@ export default class MessageController {
         isPrivate: channel.isPrivate
       }))
 
-      console.log(channels)
+      console.log('Loaded channels:', user, channels)
 
       socket.emit('loadChannels:response', channels)
     } catch (error) {
