@@ -72,18 +72,6 @@ export default {
       isDialogOpen.value = true;
     };
 
-    const createChat = () => {
-      if (newChatName.value.trim()) {
-        const newChat = {
-          name: newChatName.value,
-          isPrivate: isPrivateChat.value,
-        };
-
-        newChatName.value = '';
-        isPrivateChat.value = false;
-        isDialogOpen.value = false;
-      }
-    };
 
     const toggleLeftDrawer = () => {
       leftDrawerOpen.value = !leftDrawerOpen.value
@@ -134,7 +122,6 @@ export default {
       newChatName,
       isPrivateChat,
       openCreateChatDialog,
-      createChat,
     }
   },
 }

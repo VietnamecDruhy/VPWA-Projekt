@@ -1,5 +1,5 @@
 <template>
-  <q-page class="window-height window-width row justify-center items-center custom-bg">
+  <q-page class=" row justify-center items-center custom-bg ">
     <div class="column q-pa-md">
       <div class="row q-col-gutter-md">
         <q-card bordered class="q-pa-lg q-card">
@@ -83,16 +83,18 @@
   </q-page>
 </template>
 
-<script>
+<script lang="ts">
 import { defineComponent, reactive, toRefs, onMounted } from 'vue';
 import { useStore } from 'src/store';
 import { useRouter } from 'vue-router';
+import { QNotifyCreateOptions, useQuasar } from 'quasar';
 
 export default defineComponent({
   name: 'SignPage',
   setup() {
     const store = useStore(); // Access the Vuex store
     const router = useRouter(); // Access the router
+    const $q = useQuasar(); // Access Quasar utilities
 
     // Reactive state for the form
     const state = reactive({
@@ -122,7 +124,6 @@ export default defineComponent({
       };
     };
 
-    // Handle form submission
     const onSubmit = () => {
       if (state.isSignUp) {
         const temp = {
@@ -134,12 +135,37 @@ export default defineComponent({
         };
         store
           .dispatch('auth/register', temp)
-          .then(() => (state.isSignUp = !state.isSignUp));
+          .then(() => (state.isSignUp = !state.isSignUp))
+          .catch(() => {
+            showNotification(
+              'Registration failed. Please try again.',
+              'negative'
+            );
+          });
       } else {
         store
           .dispatch('auth/login', state.credentials)
-          .then(() => router.push('/chat'));
+          .then(() => router.push('/chat'))
+          .catch(() => {
+            // Show error notification for login
+            showNotification(
+              'Invalid email or password. Please try again.',
+              'negative',
+              3000
+            );
+          });
       }
+    };
+
+    const showNotification = (message: string, type: string = 'info', timeout: number = 3000) => {
+      const notifyOptions: QNotifyCreateOptions = {
+        message: message,
+        position: 'top',
+        color: type,
+        timeout: timeout,
+        actions: [{ icon: 'close', color: 'white' }]
+      };
+      $q.notify(notifyOptions);
     };
 
 
@@ -153,6 +179,7 @@ export default defineComponent({
       toggleForm,
       resetForm,
       onSubmit,
+      showNotification,
     };
   },
 });
@@ -160,9 +187,9 @@ export default defineComponent({
 
 <style>
 .q-card {
-  width: 100%;
-  max-width: 350px;
-  /* Maximum width to make it responsive */
+
+  width: 350px;
+
   border-radius: 20px;
   background-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 10px #ffffff;
