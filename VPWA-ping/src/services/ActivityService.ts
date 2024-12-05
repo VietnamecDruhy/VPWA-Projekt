@@ -7,6 +7,7 @@ export type UserState = 'online' | 'offline' | 'dnd';
 
 class ActivitySocketManager extends SocketManager {
   private currentState: UserState = 'online';
+  private lastOnlineTimestamp: string | null = null;  // Add this property
 
   public subscribe({ store }: BootParams): void {
     this.socket.on('connect', () => {
@@ -57,15 +58,23 @@ class ActivitySocketManager extends SocketManager {
   }
 
   public updateUserState(state: UserState): void {
-    console.log('Updating user state to:', state);
     this.currentState = state;
 
     if (this.socket.connected) {
-      console.log('Emitting user:setState event');
+      if (state === 'offline') {
+        this.lastOnlineTimestamp = new Date().toISOString();
+      } else {
+        this.lastOnlineTimestamp = null;
+      }
+
       this.socket.emit('user:setState', state);
     } else {
       console.warn('Socket is not connected, cannot emit state change');
     }
+  }
+
+  public getLastOnlineTimestamp(): string | null {
+    return this.lastOnlineTimestamp;
   }
 }
 

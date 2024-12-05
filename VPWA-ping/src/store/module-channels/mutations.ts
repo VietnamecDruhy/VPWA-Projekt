@@ -42,6 +42,13 @@ const mutation: MutationTree<ChannelsStateInterface> = {
   },
   NEW_MESSAGE(state, { channel, message }: { channel: string, message: SerializedMessage }) {
     state.messages[channel].push(message)
+
+    if (channel !== state.active) {
+      state.pendingNotification = {
+        channel,
+        message
+      }
+    }
   },
 
   SET_TYPING(state, { channel, user, isTyping }) {

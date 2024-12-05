@@ -153,38 +153,38 @@ export abstract class SocketManager implements SocketManagerContract {
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     protected emitAsync<T>(event: string, ...args: any[]): Promise<T> {
-      return new Promise((resolve, reject) => {
-        if (!this.socket.connected) {
-          this.socket.once('connect', () => {
-            this.emitWithResponse(event, args, resolve, reject);
-          });
-        } else {
-          this.emitWithResponse(event, args, resolve, reject);
-        }
-      });
+        return new Promise((resolve, reject) => {
+            if (!this.socket.connected) {
+                this.socket.once('connect', () => {
+                    this.emitWithResponse(event, args, resolve, reject);
+                });
+            } else {
+                this.emitWithResponse(event, args, resolve, reject);
+            }
+        });
     }
 
-  private emitWithResponse(event: string, args: any[], resolve: (value: any) => void, reject: (reason?: any) => void) {
-    const responseEvent = `${event}:response`;
-    const errorEvent = `${event}:error`;
+    private emitWithResponse(event: string, args: any[], resolve: (value: any) => void, reject: (reason?: any) => void) {
+        const responseEvent = `${event}:response`;
+        const errorEvent = `${event}:error`;
 
-    const cleanup = () => {
-      this.socket.off(responseEvent);
-      this.socket.off(errorEvent);
-    };
+        const cleanup = () => {
+            this.socket.off(responseEvent);
+            this.socket.off(errorEvent);
+        };
 
-    this.socket.once(responseEvent, (data) => {
-      cleanup();
-      resolve(data);
-    });
+        this.socket.once(responseEvent, (data) => {
+            cleanup();
+            resolve(data);
+        });
 
-    this.socket.once(errorEvent, (error) => {
-      cleanup();
-      reject(error.error || error.message || 'Server error');
-    });
+        this.socket.once(errorEvent, (error) => {
+            cleanup();
+            reject(error.error || error.message || 'Server error');
+        });
 
-    this.socket.emit(event, ...args);
-  }
+        this.socket.emit(event, ...args);
+    }
 
     public destroy(): void {
         (this.constructor as SocketManagerConstructorContract).destroyInstance(this)

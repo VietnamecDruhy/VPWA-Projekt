@@ -11,7 +11,7 @@ export interface ActivityStateInterface {
 
 function state(): ActivityStateInterface {
     return {
-        onlineUsers: {}
+        onlineUsers: {},
     }
 }
 

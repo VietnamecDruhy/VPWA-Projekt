@@ -197,14 +197,15 @@
 
     <!-- Channel Messages -->
     <q-page-container>
-      <ChatComponent :active-channel="selectedChannel" />
+      <ChatComponent  :active-channel="selectedChannel"
+                      :user-state="userState"/>
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
 import ChatComponent from '../components/ChatComponent.vue';
-import { ref, Ref, onMounted, computed } from 'vue'
+import { ref, Ref, onMounted, computed, watch } from 'vue'
 import { useQuasar, QNotifyCreateOptions } from 'quasar'
 import { useStore } from 'src/store'
 import { useRouter } from 'vue-router'
@@ -344,21 +345,55 @@ const toggleMentionOnly = () => {
   MessageMention.value = !MessageMention.value
 }
 
+watch(() => store.state.channels.pendingNotification, (notification) => {
+    if (notification) {
+        const { channel, message } = notification
+        console.log('Your current log state:', userState)
+        
+        // Only show notification if not in DND mode
+        if (userState.value !== 'dnd') {
+            showNotification(
+                `${message.author.nickname}: ${truncateText(message.content)}`,
+                'info',
+                5000,
+                channel
+            )
+        }
+    }
+})
+
+// Modify your existing showNotification function
+const showNotification = (
+  message: string, 
+  type: string = 'info', 
+  timeout: number = 5000,
+  channelName?: string
+) => {
+  const notifyOptions: QNotifyCreateOptions = {
+    message,
+    position: 'top-right',
+    color: type,
+    timeout,
+    actions: [
+      { 
+        label: channelName ? 'Open' : 'Dismiss',
+        color: 'white',
+        handler: () => {
+          if (channelName) {
+            selectChannel(channelName)
+          }
+        }
+      }
+    ],
+    classes: 'notification-message sf-pro-500'
+  }
+  $q.notify(notifyOptions)
+}
+
 // Utility functions
 const truncateText = (text: string): string => {
   const maxTextLength = 18
   return text.length > maxTextLength ? text.substring(0, maxTextLength) + '...' : text
-}
-
-const showNotification = (message: string, type: string = 'info', timeout: number = 0) => {
-  const notifyOptions: QNotifyCreateOptions = {
-    message,
-    position: 'top',
-    color: type,
-    timeout,
-    actions: [{ icon: 'close', color: 'white' }]
-  }
-  $q.notify(notifyOptions)
 }
 
 // Initialization

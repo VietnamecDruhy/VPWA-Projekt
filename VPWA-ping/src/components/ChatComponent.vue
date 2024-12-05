@@ -59,20 +59,20 @@
 
 
 <script setup lang="ts">
-// import ChatComponent from '../utils/ChatComponentLogic'
-// export default ChatComponent
-
 import { ref, nextTick, onMounted, onUnmounted, watch, Ref, computed, defineComponent } from 'vue'
 import { useQuasar, QNotifyCreateOptions, scroll } from 'quasar'
 import { useStore } from 'src/store';
 import { SerializedMessage } from 'src/contracts'
 import { handleCommand } from 'src/utils';
 import { channelService } from 'src/services';
+import activityService from 'src/services/ActivityService'
+
 
 
 // define props
 const props = defineProps<{
   activeChannel: string
+  userState: 'online' | 'offline' | 'dnd'
 }>()
 
 // define store
@@ -147,6 +147,17 @@ watch(() => props.activeChannel, async (newChannel) => {
 // get messages through store
 const messages = computed(() => {
   const msgs = store.getters['channels/currentMessages'] || [];
+  
+  // If user is offline, only return messages up to when they went offline
+  if (props.userState === 'offline') {
+    const lastOnlineTimestamp = activityService.getLastOnlineTimestamp();
+    if (lastOnlineTimestamp) {
+      return msgs.filter((msg: SerializedMessage) => 
+        new Date(msg.createdAt) <= new Date(lastOnlineTimestamp)
+      );
+    }
+  }
+  
   return msgs;
 })
 
@@ -266,14 +277,16 @@ const getUserStatusClass = (message: SerializedMessage): string => {
     return 'status-offline status-non-member'
   }
   
-  const isOnline = store.getters['activity/isUserOnline'](message.author.id)
-  if (!isOnline) return 'status-offline'
-  
   const userState = store.getters['activity/getUserState'](message.author.id)
-  return userState === 'dnd' ? 'status-dnd' : 'status-online'
+  switch (userState) {
+    case 'dnd':
+      return 'status-dnd'
+    case 'online':
+      return 'status-online'
+    default:
+      return 'status-offline'
+  }
 }
-
-
 
 // misc
 const shouldShowDateDivider = (index: number): boolean => {

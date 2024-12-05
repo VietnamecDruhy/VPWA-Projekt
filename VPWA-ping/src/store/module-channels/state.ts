@@ -16,7 +16,11 @@ export interface ChannelsStateInterface {
         timestamp: number
       }
     }
-  }
+  },
+  pendingNotification: {
+    channel: string,
+    message: SerializedMessage
+  } | null
 }
 
 function state(): ChannelsStateInterface {
@@ -27,7 +31,8 @@ function state(): ChannelsStateInterface {
     active: null,
     isPrivate: {},
     members: {},  // Initialize members object
-    typingUsers: {}
+    typingUsers: {},
+    pendingNotification: null
   }
 }
 
