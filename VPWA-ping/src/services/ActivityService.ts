@@ -1,17 +1,14 @@
 // src/services/ActivityService.ts
 import { User } from 'src/contracts';
 import { authManager } from '.';
-import { SocketManager } from './SocketManager';
+import { BootParams, SocketManager } from './SocketManager'
 
 export type UserState = 'online' | 'offline' | 'dnd';
 
 class ActivitySocketManager extends SocketManager {
   private currentState: UserState = 'online';
 
-  public subscribe(): void {
-    console.log('Activity socket manager subscribing to events');
-
-    // Log connection status
+  public subscribe({ store }: BootParams): void {
     this.socket.on('connect', () => {
       console.log('Activity socket connected');
     });
@@ -22,21 +19,24 @@ class ActivitySocketManager extends SocketManager {
 
     this.socket.on('user:list', (onlineUsers: User[]) => {
       console.log('Received online users list:', onlineUsers);
+      store.commit('activity/SET_ONLINE_USERS', onlineUsers);
     });
 
     this.socket.on('user:online', (user: User) => {
       console.log('User came online:', user);
+      store.commit('activity/ADD_ONLINE_USER', user);
     });
 
     this.socket.on('user:offline', (user: User) => {
       console.log('User went offline:', user);
+      store.commit('activity/REMOVE_ONLINE_USER', user);
     });
 
     this.socket.on('user:stateChange', ({ userId, state }: { userId: number, state: UserState }) => {
       console.log('Received user state change:', { userId, state });
+      store.commit('activity/UPDATE_USER_STATE', { userId, newState: state });
     });
 
-    // Log any errors
     this.socket.on('error', (error: any) => {
       console.error('Activity socket error:', error);
     });

@@ -20,7 +20,14 @@
             </div>
 
             <div class="message-header">
-              <span class="sender">{{ message.author.nickname }}</span>
+              <span class="sender">
+                <span 
+                  v-if="!isMine(message)" 
+                  class="status-indicator"
+                  :class="getUserStatusClass(message)"
+                ></span>
+                {{ message.author.nickname }}
+              </span>
               <span class="time">{{ formatTime(message.createdAt) }}</span>
             </div>
             <div class="bubble">
@@ -124,7 +131,6 @@ const infiniteScroll = async () => {
 
 // On mount add a event listener for loading new messages 
 onMounted(() => {
-  console.log('props:', props.activeChannel)
   if (chatContainer.value) {
     chatContainer.value.addEventListener('scroll', infiniteScroll)
   }
@@ -134,7 +140,7 @@ onMounted(() => {
 watch(() => props.activeChannel, async (newChannel) => {
   if (newChannel) {
     store.commit('channels/SET_ACTIVE', newChannel)
-    store.getters['channels/currentMessages']
+    // store.getters['channels/currentMessages']
   }
 }, { immediate: true })
 
@@ -178,12 +184,23 @@ const TYPING_TIMEOUT = 3000
 let typingTimeout: ReturnType<typeof setTimeout> | null = null
 
 const typingUsers = computed(() => {
-  return store.state.channels.typingUsers[props.activeChannel] || {}
+    return store.getters['channels/typingUsers'](props.activeChannel)
 })
 
 const activeTypers = computed(() => {
   const now = Date.now()
-  return Object.entries(typingUsers.value)
+
+  type TypingUser = { 
+    timestamp: number; 
+    user: { 
+      nickname: string; 
+      content: { 
+        content: string 
+      } 
+    } 
+  }
+  
+  return (Object.entries(typingUsers.value) as [string, TypingUser][])
     .filter(([_, typer]) => now - typer.timestamp < TYPING_TIMEOUT)
     .filter(([_, typer]) => typer.user.nickname !== currentUser.value?.nickname)
     .map(([_, typer]) => ({
@@ -235,6 +252,26 @@ const sendMessage = async () => {
     console.error('Error sending message:', error);
   }
 };
+
+// user status
+const getUserStatusClass = (message: SerializedMessage): string => {
+  if (isMine(message)) return ''
+  
+  // Check if user is still a member of the channel
+  const currentChannel = props.activeChannel
+  const channelMembers = store.state.channels.members[currentChannel] || []
+  const isChannelMember = channelMembers.some(member => member.id === message.author.id)
+  
+  if (!isChannelMember) {
+    return 'status-offline status-non-member'
+  }
+  
+  const isOnline = store.getters['activity/isUserOnline'](message.author.id)
+  if (!isOnline) return 'status-offline'
+  
+  const userState = store.getters['activity/getUserState'](message.author.id)
+  return userState === 'dnd' ? 'status-dnd' : 'status-online'
+}
 
 
 
@@ -336,9 +373,7 @@ const formatTime = (timestamp: string): string => {
 
 .typing-indicator-container {
   height: 24px;
-  /* Adjust this value based on your design needs */
   margin-bottom: 8px;
-  /* Add some space between the typing indicator and the input */
 }
 
 .typing-indicator {
@@ -350,5 +385,36 @@ const formatTime = (timestamp: string): string => {
 
 .typing-indicator:hover {
   text-decoration: underline;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.status-online {
+  background-color: #4CAF50;  
+}
+
+.status-offline {
+  background-color: #9e9e9e; 
+}
+
+.status-dnd {
+  background-color: #f44336;
+}
+
+.status-non-member::after {
+  content: '×';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8px;
+  color: #000;
+  font-weight: bold;
 }
 </style>

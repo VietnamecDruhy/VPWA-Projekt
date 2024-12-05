@@ -12,6 +12,10 @@ const getters: GetterTree<ActivityStateInterface, StateInterface> = {
         return Object.values(state.onlineUsers).filter(user => user.state !== 'dnd')
     },
 
+    isUserOnline: (state) => (userId: number): boolean => {
+        return userId in state.onlineUsers
+    },
+
     getUserState: (state) => (userId: number): string => {
         return state.onlineUsers[userId]?.state || 'offline'
     }

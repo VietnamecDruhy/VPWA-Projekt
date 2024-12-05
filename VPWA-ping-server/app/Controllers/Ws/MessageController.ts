@@ -14,7 +14,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 // implementation is bind into container inside providers/AppProvider.ts
 @inject(['Repositories/MessageRepository'])
 export default class MessageController {
-    constructor(private messageRepository: MessageRepositoryContract) { }
+  constructor(private messageRepository: MessageRepositoryContract) { }
 
   public async loadMessages(
     { params, socket, auth }: WsContextContract,
@@ -85,58 +85,59 @@ export default class MessageController {
     }
   }
 
-    public async addMessage({ params, socket, auth }: WsContextContract, content: string) {
-        const message = await this.messageRepository.create(params.name, auth.user!.id, content)
-        // broadcast message to other users in channel
-        socket.broadcast.emit('message', message)
-        // return message to sender
-        socket.emit('message', message)
+  public async addMessage({ params, socket, auth }: WsContextContract, content: string) {
+    const message = await this.messageRepository.create(params.name, auth.user!.id, content)
+    // broadcast message to other users in channel
+    socket.broadcast.emit('message', message)
+    // return message to sender
+    socket.emit('message', message)
+  }
+
+  // channel
+  public async loadChannels({ socket, auth }: WsContextContract) {
+    try {
+      // Get the authenticated user and load their channels
+      const user = await User.query()
+        .where('id', auth.user!.id)
+        .preload('channels', (query) => {
+          query.select(['id', 'name', 'is_private']);
+        })
+        .firstOrFail();
+
+      // Extract channels and send them back
+      const channels = user.channels.map(channel => ({
+        id: channel.id,
+        name: channel.name,
+        isPrivate: channel.isPrivate
+      }))
+
+      console.log(channels)
+
+      socket.emit('loadChannels:response', channels)
+    } catch (error) {
+      console.error('Error loading channels:', error)
+      socket.emit('loadChannels:error', error)
     }
+  }
 
-    // channel
-    public async loadChannels({ socket, auth }: WsContextContract) {
-        try {
-            // Get the authenticated user and load their channels
-            const user = await User.query()
-                .where('id', auth.user!.id)
-                .preload('channels', (query) => {
-                    query.select(['id', 'name', 'is_private']);
-                })
-                .firstOrFail();
+  public async handleTypingStart({ socket, auth }: WsContextContract, data: string) {
+    console.log(data)
+    const user = auth.user!;
+    socket.broadcast.emit('typing:start', {
+      id: user.id,
+      nickname: user.nickname,
+      content: data
+    });
+  }
 
-            // Extract channels and send them back
-            const channels = user.channels.map(channel => ({
-                id: channel.id,
-                name: channel.name,
-                isPrivate: channel.isPrivate
-            }))
+  public async handleTypingStop({ socket, auth }: WsContextContract) {
+    const user = auth.user!;
+    socket.broadcast.emit('typing:stop', {
+      id: user.id,
+      nickname: user.nickname
+    });
+  }
 
-            console.log(channels)
-
-            socket.emit('loadChannels:response', channels)
-        } catch (error) {
-            console.error('Error loading channels:', error)
-            socket.emit('loadChannels:error', error)
-        }
-    }
-
-    public async handleTypingStart({ socket, auth }: WsContextContract, data: string) {
-        console.log(data)
-        const user = auth.user!;
-        socket.broadcast.emit('typing:start', {
-            id: user.id,
-            nickname: user.nickname,
-            content: data
-        });
-    }
-
-    public async handleTypingStop({ socket, auth }: WsContextContract) {
-        const user = auth.user!;
-        socket.broadcast.emit('typing:stop', {
-            id: user.id,
-            nickname: user.nickname
-        });
-    }
   public async listMembers({ params, socket }: WsContextContract) {
     try {
       const channel = await Channel.findByOrFail('name', params.name)
@@ -195,7 +196,6 @@ export default class MessageController {
 
       // Clean up socket connection
       socket.leave(params.name)
-      socket.disconnect(true)  // Force disconnect the socket
     } catch (error) {
       console.error('Error leaving channel:', error)
       socket.emit('error', { message: error.message || 'Failed to leave channel' })
@@ -226,7 +226,6 @@ export default class MessageController {
 
       // Clean up socket connection
       socket.leave(params.name)
-      socket.disconnect(true)  // Force disconnect the socket
     } catch (error) {
       console.error('Error deleting channel:', error)
       socket.emit('error', { message: error.message || 'Failed to delete channel' })

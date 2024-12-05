@@ -136,7 +136,7 @@ class ChannelService {
   public closeConnection(name: string): void {
     const channel = this.channels.get(name)
     if (channel) {
-      // Disconnect namespace and remove references to socket
+      channel.socket.disconnect()
       channel.destroy()
       this.channels.delete(name)
     }

@@ -15,7 +15,7 @@ export default class ActivityController {
 
     if (userSockets.size === 0) {
       console.log(`Broadcasting user:online event for ${auth.user!.nickname}`);
-      socket.nsp.server.emit("user:online", auth.user);
+      socket.broadcast.emit("user:online", auth.user);  // Changed to broadcast
     }
 
     socket.join(room);
@@ -47,7 +47,7 @@ export default class ActivityController {
 
     if (userSockets.size === 0) {
       console.log(`Broadcasting user:offline event for ${auth.user!.nickname}`);
-      socket.nsp.server.emit("user:offline", auth.user);
+      socket.broadcast.emit("user:offline", auth.user);  // Changed to broadcast
     }
   }
 
@@ -58,7 +58,7 @@ export default class ActivityController {
 
       // Notify all clients about the state change
       console.log('Broadcasting state change to all clients');
-      socket.nsp.server.emit("user:stateChange", {
+      socket.broadcast.emit("user:stateChange", {  // Changed to broadcast
         userId: auth.user!.id,
         state: state
       });

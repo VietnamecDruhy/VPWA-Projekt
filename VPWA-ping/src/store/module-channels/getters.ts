@@ -15,6 +15,9 @@ const getters: GetterTree<ChannelsStateInterface, StateInterface> = {
       const messages = context.messages[channel]
       return messages.length > 0 ? messages[messages.length - 1] : null
     }
+  },
+  typingUsers: (state) => (channelName: string) => {
+    return state.typingUsers[channelName] || {}
   }
 }
 
