@@ -10,7 +10,7 @@
                   {{ isSignUp ? 'Sign Up' : 'Sign In' }}
                 </h5>
                 <!-- Ping image next to the header text -->
-                <img src="src/css/ping.gif" alt="Ping Animation" class="ping-image" />
+                <img src="../css/ping.gif" alt="Ping Animation" class="ping-image" />
               </div>
 
               <!-- Name, Surname, Nickname for Sign Up -->

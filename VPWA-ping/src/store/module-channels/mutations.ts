@@ -11,19 +11,47 @@ const mutation: MutationTree<ChannelsStateInterface> = {
     state.loading = true
     state.error = null
   },
-  LOADING_SUCCESS(state, { channel, messages }: { channel: string, messages: SerializedMessage[] }) {
-    state.loading = false
+
+  LOADING_SUCCESS(state, { channel, messages, isPrivate }: {
+    channel: string,
+    messages: SerializedMessage[],
+    isPrivate?: boolean
+  }) {
+    console.log('Loading success:', channel, messages, isPrivate);
+    console.log('isPrivate:', isPrivate)
+    state.loading = false;
+
     // Initialize messages array if it doesn't exist
     if (!state.messages[channel]) {
-      state.messages[channel] = messages
+      state.messages[channel] = messages;
     } else {
-      state.messages[channel] = [...messages, ...state.messages[channel]]
+      state.messages[channel] = [...messages, ...state.messages[channel]];
+    }
+
+    // Initialize members array if it doesn't exist
+    if (!state.members[channel]) {
+      state.members[channel] = [];
+    }
+
+    // Set privacy status if provided
+    if (typeof isPrivate !== 'undefined') {
+      if (!state.isPrivate) {
+        state.isPrivate = {};
+      }
+      state.isPrivate[channel] = isPrivate;
+    }
+
+    // Initialize typing users if needed
+    if (!state.typingUsers[channel]) {
+      state.typingUsers[channel] = {};
     }
   },
+
   LOADING_ERROR(state, error) {
     state.loading = false
     state.error = error
   },
+
   SET_ACTIVE(state, channel: string) {
     state.active = channel
   },
@@ -42,6 +70,7 @@ const mutation: MutationTree<ChannelsStateInterface> = {
       state.isPrivate[channel.name] = channel.isPrivate;
     });
   },
+
   NEW_MESSAGE(state, { channel, message }: { channel: string, message: SerializedMessage }) {
     state.messages[channel].push(message)
 
@@ -67,6 +96,7 @@ const mutation: MutationTree<ChannelsStateInterface> = {
       delete state.typingUsers[channel][user.id]
     }
   },
+
   SET_CHANNEL_MEMBERS(state, { channel, members }) {
     if (!state.members) {
       state.members = {};
@@ -95,8 +125,16 @@ const mutation: MutationTree<ChannelsStateInterface> = {
   },
 
   ADD_CHANNEL_MEMBER(state, { channelName, username }) {
-    // Implementation depends on how you store channel members in your state
-    console.log(`User ${username} was added to channel ${channelName}`)
+    if (state.members && state.members[channelName]) {
+      const newUser: User = {
+        id: -1,  // Will be updated on next refresh
+        nickname: username,
+        email: '', // Will be updated on next refresh
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      state.members[channelName].push(newUser);
+    }
   },
 
   HANDLE_USER_KICKED(state: ChannelsStateInterface, { channelName, username, kickedUserId }: { channelName: string, username: string, kickedUserId: number }, store?: Store<StateInterface>) {

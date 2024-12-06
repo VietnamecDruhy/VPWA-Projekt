@@ -18,6 +18,13 @@ const getters: GetterTree<ChannelsStateInterface, StateInterface> = {
   },
   typingUsers: (state) => (channelName: string) => {
     return state.typingUsers[channelName] || {}
+  },
+  memberCount: (state) => (channelName: string) => {
+    return state.members[channelName]?.length || 0
+  },
+  isPrivate: (state) => (channelName: string) => {
+    if (!channelName) return false
+    return state.isPrivate[channelName] ?? false
   }
 }
 

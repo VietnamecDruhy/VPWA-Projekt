@@ -138,6 +138,7 @@ onMounted(() => {
 
 // watch join channel to load messages, create socket to listen for new messages
 watch(() => props.activeChannel, async (newChannel) => {
+  console.log('new channle', newChannel)
   if (newChannel) {
     store.commit('channels/SET_ACTIVE', newChannel)
     // store.getters['channels/currentMessages']

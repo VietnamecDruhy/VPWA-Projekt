@@ -44,7 +44,22 @@ export default class MessageController {
         });
 
         socket.join(name);
-        socket.emit('loadMessages:response', []);
+        socket.emit('loadMessages:response', {
+          messages: [],
+          channelInfo: {
+            name: channel.name,
+            isPrivate: channel.isPrivate
+          }
+        });
+
+        // Emit initial members list (just the creator)
+        const initialMember = await Database
+          .from('users')
+          .where('id', auth.user!.id)
+          .select('id', 'nickname', 'email')
+          .first();
+
+        socket.emit('channelMembers', [initialMember]);
         return;
       }
 
@@ -75,10 +90,31 @@ export default class MessageController {
         });
       }
 
-      // Fetch messages and join the socket room
+      // Fetch messages
       const messages = await this.messageRepository.getAll(name, messageId);
+
+      // Fetch current channel members
+      const channelMembers = await Database
+        .from('channel_users')
+        .join('users', 'channel_users.user_id', 'users.id')
+        .where('channel_users.channel_id', channel.id)
+        .select('users.id', 'users.nickname', 'users.email');
+
+      // Join the socket room
       socket.join(name);
-      socket.emit('loadMessages:response', messages);
+
+      // Emit messages with channel info
+      socket.emit('loadMessages:response', {
+        messages,
+        channelInfo: {
+          name: channel.name,
+          isPrivate: channel.isPrivate
+        }
+      });
+
+      // Emit channel members
+      socket.emit('channelMembers', channelMembers);
+
     } catch (error) {
       console.error('Error loading messages:', error);
       socket.emit('loadMessages:error', { message: error.message });
@@ -189,6 +225,12 @@ export default class MessageController {
           .where('user_id', userId)
           .delete()
 
+        const leavingUser = await User.findOrFail(userId)
+        socket.broadcast.to(params.name).emit('userRevoked', {
+          channelName: channel.name,
+          username: leavingUser.nickname
+        })
+
         socket.emit('leftChannel', channel.name)
       }
 
@@ -274,6 +316,7 @@ export default class MessageController {
       socket.emit('error', { message: error.message || 'Failed to revoke user' })
     }
   }
+
   public async kickUser({ params, socket, auth }: WsContextContract, username: string) {
     try {
       const channel = await Channel.findByOrFail('name', params.name);

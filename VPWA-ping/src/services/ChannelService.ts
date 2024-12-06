@@ -42,6 +42,20 @@ class ChannelSocketManager extends SocketManager {
       console.error('Socket loadMessages error:', error);
     });
 
+    this.socket.on('loadMessages:response', (data: {
+      messages: SerializedMessage[],
+      channelInfo: {
+        name: string,
+        isPrivate: boolean
+      }
+    }) => {
+      store.commit('channels/LOADING_SUCCESS', {
+        channel: data.channelInfo.name,
+        messages: data.messages,
+        isPrivate: data.channelInfo.isPrivate
+      });
+    });
+
     this.socket.on('message', (message: SerializedMessage) => {
       store.commit('channels/NEW_MESSAGE', { channel, message });
     });
@@ -80,6 +94,10 @@ class ChannelSocketManager extends SocketManager {
 
     this.socket.on('userRevoked', (data: { channelName: string; username: string }) => {
       store.commit('channels/REMOVE_CHANNEL_MEMBER', data);
+    });
+
+    this.socket.on('userJoined', ({ channelName, username }: { channelName: string, username: string }) => {
+      store.commit('channels/ADD_CHANNEL_MEMBER', { channelName, username });
     });
 
     // Handle disconnect event

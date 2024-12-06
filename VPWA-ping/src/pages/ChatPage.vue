@@ -251,6 +251,7 @@ const leaveChannel = async (channel: string) => {
   }
 }
 
+// log out
 const logout = async () => {
   try {
     channels.value.forEach((channel: string) => {
@@ -266,14 +267,14 @@ const logout = async () => {
 
 // Channel management
 const isPrivate = computed(() => {
-  if (!selectedChannel.value) return false
-  return store.state.channels.isPrivate[selectedChannel.value] ? true : false
+  return store.getters['channels/isPrivate'](selectedChannel.value)
 })
 
 const memberCount = computed(() => {
-  return store.state.channels.members[selectedChannel.value]?.length || 0
+  return store.getters['channels/memberCount'](selectedChannel.value)
 })
 
+// current user
 const currentUser = store.state.auth.user
 
 const channels = computed(() => {
@@ -285,7 +286,8 @@ const channels = computed(() => {
   return channelList
 })
 
-const selectedChannel = ref(channels.value[0])
+// current channel in left drawer
+const selectedChannel = ref<string>('general')
 
 const selectChannel = (channel: string) => {
   selectedChannel.value = channel
@@ -349,22 +351,62 @@ const toggleMentionOnly = () => {
   MessageMention.value = !MessageMention.value
 }
 
-watch(() => store.state.channels.pendingNotification, (notification) => {
+
+// notifications
+watch(() => store.state.channels.pendingNotification, async (notification) => {
     if (notification) {
         const { channel, message } = notification
-        console.log('Your current log state:', userState)
-        
-        // Only show notification if not in DND mode
-        if (userState.value !== 'dnd') {
-            showNotification(
+
+        if (userState.value !== 'dnd' && !$q.appVisible) {
+            console.log('go?', $q.appVisible)
+            if (true) {
+                const notification = new Notification(`New message in ${channel}`, {
+                    body: `${message.author.nickname}: ${truncateText(message.content)}`,
+                    icon: '/your-app-icon.png', // Add your app icon path
+                });
+
+                notification.onclick = () => {
+                    // Focus on the tab when notification is clicked
+                    window.focus();
+                    selectChannel(channel);
+                };
+            }
+        } else if (userState.value !== 'dnd' &&$q.appVisible) {
+              // For in-tab notifications
+              showNotification(
                 `${message.author.nickname}: ${truncateText(message.content)}`,
                 'info',
-                5000,
+                50000,
                 channel
-            )
+            );
         }
     }
-})
+});
+
+// for updating when leaving
+
+// Add this watch to handle initial channel and subsequent changes
+watch(
+  () => channels.value,
+  (newChannels) => {
+    // For initial load or when no channels
+    if (!selectedChannel.value && newChannels.length > 0) {
+      selectedChannel.value = newChannels[0];
+      store.commit('channels/SET_ACTIVE', newChannels[0]);
+    }
+    // When channel is removed
+    else if (selectedChannel.value && !newChannels.includes(selectedChannel.value)) {
+      selectedChannel.value = newChannels[0] || 'general';
+      store.commit('channels/SET_ACTIVE', newChannels[0] || 'general');
+    }
+    // When a new channel is joined (it will be first in the array)
+    else if (newChannels.length > 0 && selectedChannel.value !== newChannels[0]) {
+      selectedChannel.value = newChannels[0];
+      store.commit('channels/SET_ACTIVE', newChannels[0]);
+    }
+  },
+  { immediate: true }
+);
 
 // Modify your existing showNotification function
 const showNotification = (
@@ -424,8 +466,21 @@ const initializeChannels = async () => {
   }
 }
 
+const requestNotificationPermission = async () => {
+  console.log('requesting notification')
+  try {
+    console.log('requesting notification')
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  } catch (error) {
+    console.error('Error requesting notification permission:', error);
+    return false;
+  }
+};
+
 onMounted(async () => {
   try {
+    await requestNotificationPermission();
     await initializeChannels()
     activityService.updateUserState('online')
   } catch (error) {

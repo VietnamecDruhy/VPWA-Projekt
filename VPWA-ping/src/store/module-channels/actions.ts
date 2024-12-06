@@ -19,8 +19,7 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
 
       const channelManager = await channelService.join(channelName)
       try {
-        const messages = await channelManager.loadMessages(undefined, isPrivate)
-        commit('LOADING_SUCCESS', { channel: channelName, messages, isPrivate })
+        await channelManager.loadMessages(undefined, isPrivate)
       } catch (error) {
         // Clean up socket connection if message loading fails
         channelService.closeConnection(channelName)
