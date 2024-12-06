@@ -30,13 +30,14 @@ export const handleCommand = async (command: string, store: VuexStore<StateInter
           console.log('Invalid privacy setting. Use "private" or "public"');
           return false;
         }
-        store.dispatch('channels/join', {
+        await store.dispatch('channels/join', {
           channel: channelName,
-          isPrivate: privacy === 'private'
+          isPrivate: privacy === 'private',
         });
       } else {
-        store.dispatch('channels/join', channelName)
-          .catch(error => {
+        store
+          .dispatch('channels/join', channelName)
+          .catch((error) => {
             if (error.message.includes('private')) {
               console.log(`Cannot join ${channelName}: This is a private channel (invite only)`);
             } else {
@@ -47,71 +48,109 @@ export const handleCommand = async (command: string, store: VuexStore<StateInter
       return true;
     }
 
-        case 'list': {
-          try {
-            await store.dispatch('channels/listMembers', currentChannel);
-            return true;
-          } catch (error) {
-            console.error('Error listing members:', error instanceof Error ? error.message : 'Unknown error');
-            return false;
-          }
-        }
+    case 'list': {
+      try {
+        await store.dispatch('channels/listMembers', currentChannel);
+        return true;
+      } catch (error) {
+        console.error('Error listing members:', error instanceof Error ? error.message : 'Unknown error');
+        return false;
+      }
+    }
 
-        case 'cancel': {
-          try {
-            await store.dispatch('channels/leaveChannel', currentChannel);
-            return true;
-          } catch (error) {
-            console.error('Error leaving channel:', error instanceof Error ? error.message : 'Unknown error');
-            return false;
-          }
-        }
+    case 'cancel': {
+      try {
+        await store.dispatch('channels/leaveChannel', currentChannel);
+        return true;
+      } catch (error) {
+        console.error('Error leaving channel:', error instanceof Error ? error.message : 'Unknown error');
+        return false;
+      }
+    }
 
-        case 'quit': {
-          try {
-            await store.dispatch('channels/deleteChannel', currentChannel);
-            return true;
-          } catch (error) {
-            console.error('Error deleting channel:', error instanceof Error ? error.message : 'Unknown error');
-            return false;
-          }
-        }
+    case 'quit': {
+      try {
+        await store.dispatch('channels/deleteChannel', currentChannel);
+        return true;
+      } catch (error) {
+        console.error('Error deleting channel:', error instanceof Error ? error.message : 'Unknown error');
+        return false;
+      }
+    }
 
-        case 'revoke': {
-          if (args.length === 0) {
-            console.log('Usage: /revoke <username>');
-            return false;
-          }
+    case 'revoke': {
+      if (args.length === 0) {
+        console.log('Usage: /revoke <username>');
+        return false;
+      }
 
-          try {
-            await store.dispatch('channels/revokeUser', {
-              channel: currentChannel,
-              username: args[0]
-            });
-            return true;
-          } catch (error) {
-            console.error('Error revoking user:', error instanceof Error ? error.message : 'Unknown error');
-            return false;
-          }
-        }
+      try {
+        await store.dispatch('channels/revokeUser', {
+          channel: currentChannel,
+          username: args[0],
+        });
+        return true;
+      } catch (error) {
+        console.error('Error revoking user:', error instanceof Error ? error.message : 'Unknown error');
+        return false;
+      }
+    }
 
-        case 'help': {
-          console.log(`
+    case 'kick': {
+      if (args.length === 0) {
+        console.log('Usage: /kick <username>');
+        return false;
+      }
+
+      try {
+        await store.dispatch('channels/kickUser', {
+          channel: currentChannel,
+          username: args[0],
+        });
+        return true;
+      } catch (error) {
+        console.error('Error kicking user:', error instanceof Error ? error.message : 'Unknown error');
+        return false;
+      }
+    }
+
+    case 'invite': {
+      if (args.length === 0) {
+        console.log('Usage: /invite <username>');
+        return false;
+      }
+
+      try {
+        await store.dispatch('channels/inviteUser', {
+          channel: currentChannel,
+          username: args[0],
+        });
+        return true;
+      } catch (error) {
+        console.error('Error inviting user:', error instanceof Error ? error.message : 'Unknown error');
+        return false;
+      }
+    }
+
+    case 'help': {
+      console.log(
+        `
 Available commands:
 /list - Show all members in the current channel
 /cancel - Leave the current channel (deletes channel if you're the owner)
 /quit - Delete the channel (owner only)
 /revoke <username> - Remove a user from the channel (owner only)
+/kick <username> - Kick a user from the channel
+/invite <username> - Invite a user to the channel
 /help - Show this help message
-            `.trim());
-          return true;
-        }
+        `.trim()
+      );
+      return true;
+    }
 
-        default:
-          console.log('Unknown command:', mainCommand);
-          return false;
-      }
-  };
-
-
-
+    default: {
+      console.log('Unknown command:', mainCommand);
+      return false;
+    }
+  }
+};

@@ -31,10 +31,12 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
       throw err
     }
   },
+
   async addMessage({ commit }, { channel, message }: { channel: string, message: RawMessage }) {
     const newMessage = await channelService.in(channel)?.addMessage(message)
     commit('NEW_MESSAGE', { channel, message: newMessage })
   },
+
   async loadMoreMessages({ commit }, { channel, timestamp, messageId }) {
     try {
       commit('LOADING_START')
@@ -67,18 +69,13 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
         throw new Error('Channel not found');
       }
       await channelManager.leaveChannel();
-
-      // Close the socket connection
       channelService.closeConnection(channel);
-
-      // Clear the channel from state
       commit('CLEAR_CHANNEL', channel);
     } catch (error) {
       commit('LOADING_ERROR', error);
       throw error;
     }
   },
-
 
   async deleteChannel({ commit }, channel: string) {
     try {
@@ -87,11 +84,7 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
         throw new Error('Channel not found');
       }
       await channelManager.deleteChannel();
-
-      // Close the socket connection
       channelService.closeConnection(channel);
-
-      // Clear the channel from state
       commit('CLEAR_CHANNEL', channel);
     } catch (error) {
       commit('LOADING_ERROR', error);
@@ -106,13 +99,45 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
         throw new Error('Channel not found');
       }
       await channelManager.revokeUser(username);
-      // The REMOVE_CHANNEL_MEMBER mutation will be called when we receive the userRevoked event
+    } catch (error) {
+      commit('LOADING_ERROR', error);
+      throw error;
+    }
+  },
+
+  async inviteUser({ commit }, { channel, username }: { channel: string; username: string }) {
+    try {
+      const channelManager = channelService.in(channel);
+      if (!channelManager) {
+        throw new Error('Channel not found');
+      }
+      await channelManager.inviteUser(username);
+      commit('ADD_SYSTEM_MESSAGE', {
+        channel,
+        content: `Invited user ${username} to the channel`
+      });
+    } catch (error) {
+      commit('LOADING_ERROR', error);
+      throw error;
+    }
+  },
+
+  async kickUser({ commit }, { channel, username }: { channel: string; username: string }) {
+    try {
+      const channelManager = channelService.in(channel);
+      if (!channelManager) {
+        throw new Error('Channel not found');
+      }
+      await channelManager.kickUser(username);
+      commit('ADD_SYSTEM_MESSAGE', {
+        channel,
+        content: `Initiated kick for user ${username}`
+      });
     } catch (error) {
       commit('LOADING_ERROR', error);
       throw error;
     }
   }
-
 }
 
 export default actions

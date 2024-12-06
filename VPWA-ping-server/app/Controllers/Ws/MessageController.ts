@@ -274,4 +274,141 @@ export default class MessageController {
       socket.emit('error', { message: error.message || 'Failed to revoke user' })
     }
   }
+  public async kickUser({ params, socket, auth }: WsContextContract, username: string) {
+    try {
+      const channel = await Channel.findByOrFail('name', params.name);
+      const userToKick = await User.findByOrFail('nickname', username);
+
+      // Check if user is in channel
+      const membership = await Database
+        .from('channel_users')
+        .where('channel_id', channel.id)
+        .where('user_id', userToKick.id)
+        .first();
+
+      if (!membership) {
+        throw new Error('User is not a member of this channel');
+      }
+
+      // If requester is owner, kick immediately
+      if (channel.ownerId === auth.user!.id) {
+        await Database
+          .from('channel_users')
+          .where('channel_id', channel.id)
+          .where('user_id', userToKick.id)
+          .delete();  // Remove them from channel_users
+
+        socket.to(params.name).emit('userKicked', {
+          channelName: channel.name,
+          username: userToKick.nickname,
+          byOwner: true,
+          kickedUserId: userToKick.id
+        });
+
+        socket.emit('userKicked', {
+          channelName: channel.name,
+          username: userToKick.nickname,
+          byOwner: true,
+          kickedUserId: userToKick.id
+        });
+
+        return;
+      }
+
+      // If not owner, increment kick counter
+      const updatedKicks = membership.kicks + 1;
+
+      if (updatedKicks >= 3) {
+        // If enough kicks, remove from channel
+        await Database
+          .from('channel_users')
+          .where('channel_id', channel.id)
+          .where('user_id', userToKick.id)
+          .delete();
+
+        socket.to(params.name).emit('userKicked', {
+          channelName: channel.name,
+          username: userToKick.nickname,
+          byVote: true,
+          kickedUserId: userToKick.id  // Make sure to include the numeric ID
+        });
+
+        socket.emit('userKicked', {
+          channelName: channel.name,
+          username: userToKick.nickname,
+          byVote: true,
+          kickedUserId: userToKick.id
+        });
+      } else {
+        await Database
+          .from('channel_users')
+          .where('channel_id', channel.id)
+          .where('user_id', userToKick.id)
+          .update({ kicks: updatedKicks });
+
+        socket.to(params.name).emit('userKickVoted', {
+          channelName: channel.name,
+          username: userToKick.nickname,
+          kicks: updatedKicks
+        });
+
+        socket.emit('userKickVoted', {
+          channelName: channel.name,
+          username: userToKick.nickname,
+          kicks: updatedKicks
+        });
+      }
+    } catch (error) {
+      console.error('Error kicking user:', error);
+      socket.emit('error', { message: error.message || 'Failed to kick user' });
+    }
+  }
+
+  public async inviteUser({ params, socket, auth }: WsContextContract, username: string) {
+    try {
+      const channel = await Channel.findByOrFail('name', params.name);
+      const userToInvite = await User.findByOrFail('nickname', username);
+
+      // Check if user is already in channel
+      const existingMembership = await Database
+        .from('channel_users')
+        .where('channel_id', channel.id)
+        .where('user_id', userToInvite.id)
+        .first();
+
+      if (existingMembership) {
+        if (existingMembership.is_kicked) {
+          // Only owner can reinvite kicked users
+          if (channel.ownerId !== auth.user!.id) {
+            throw new Error('Only channel owner can invite kicked users');
+          }
+        } else {
+          throw new Error('User is already a member of this channel');
+        }
+      }
+
+      // For private channels, only owner can invite
+      if (channel.isPrivate && channel.ownerId !== auth.user!.id) {
+        throw new Error('Only channel owner can invite users to private channels');
+      }
+
+      // Add user to channel
+      await Database.table('channel_users').insert({
+        channel_id: channel.id,
+        user_id: userToInvite.id,
+        created_at: new Date(),
+        updated_at: new Date(),
+        kicks: 0,
+        is_kicked: false
+      });
+
+      socket.broadcast.to(params.name).emit('userInvited', {
+        channelName: channel.name,
+        username: userToInvite.nickname
+      });
+    } catch (error) {
+      console.error('Error inviting user:', error);
+      socket.emit('error', { message: error.message || 'Failed to invite user' });
+    }
+  }
 }
