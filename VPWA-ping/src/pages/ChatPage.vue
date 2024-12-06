@@ -350,41 +350,48 @@ const toggleRightDrawer = () => {
   rightDrawerOpen.value = !rightDrawerOpen.value
 }
 
-const toggleMentionOnly = () => {
-  MessageMention.value = !MessageMention.value
-}
-
-
 // notifications
-watch(() => store.state.channels.pendingNotification, async (notification) => {
-    if (notification) {
-        const { channel, message } = notification
+import {
+  shouldShowNotification,
+  createNotificationContent,
+  showBrowserNotification,
+  showInAppNotification,
+  type NotificationData
+} from 'src/utils';
 
-        if (userState.value !== 'dnd' && !$q.appVisible) {
-            console.log('go?', $q.appVisible)
-            if (true) {
-                const notification = new Notification(`New message in ${channel}`, {
-                    body: `${message.author.nickname}: ${truncateText(message.content)}`,
-                    icon: '/your-app-icon.png', // Add your app icon path
-                });
+watch(
+  () => store.state.channels.pendingNotification,
+  async (notification: NotificationData | null) => {
+    if (!notification || !currentUser?.nickname) return;
 
-                notification.onclick = () => {
-                    // Focus on the tab when notification is clicked
-                    window.focus();
-                    selectChannel(channel);
-                };
-            }
-        } else if (userState.value !== 'dnd' &&$q.appVisible) {
-              // For in-tab notifications
-              showNotification(
-                `${message.author.nickname}: ${truncateText(message.content)}`,
-                'info',
-                50000,
-                channel
-            );
-        }
+    const shouldNotify = shouldShowNotification(
+      notification.message,
+      MessageMention.value,
+      currentUser.nickname,
+      userState.value
+    );
+
+    if (!shouldNotify) return;
+
+    const content = createNotificationContent(
+      notification.message,
+      notification.channel,
+      currentUser.nickname,
+      truncateText
+    );
+
+    if (!$q.appVisible) {
+      showBrowserNotification(content, notification.channel, selectChannel);
+    } else {
+      showInAppNotification(content, notification.channel, showNotification);
     }
-});
+  }
+);
+
+// Simple toggle function
+const toggleMentionOnly = () => {
+    MessageMention.value = !MessageMention.value
+}
 
 // for updating when leaving
 
