@@ -81,4 +81,4 @@ class ActivitySocketManager extends SocketManager {
   }
 }
 
-export default new ActivitySocketManager("/activity");
+export default new ActivitySocketManager('/activity');

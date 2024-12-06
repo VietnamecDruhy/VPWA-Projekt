@@ -290,7 +290,10 @@ const channels = computed(() => {
 const selectedChannel = ref<string>('general')
 
 const selectChannel = (channel: string) => {
+  store.commit('channels/SET_ACTIVE', channel)
+
   selectedChannel.value = channel
+  console.log('select', selectedChannel.value)
 }
 
 // User state management
@@ -391,6 +394,7 @@ watch(
   (newChannels) => {
     // For initial load or when no channels
     if (!selectedChannel.value && newChannels.length > 0) {
+      console.log("Channels")
       selectedChannel.value = newChannels[0];
       store.commit('channels/SET_ACTIVE', newChannels[0]);
     }

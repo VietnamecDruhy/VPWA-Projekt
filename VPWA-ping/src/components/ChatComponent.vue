@@ -39,9 +39,16 @@
 
       <div class="typing-indicator-container">
         <div v-if="activeTypers.length > 0" class="typing-indicator q-px-md">
-          <span>
-            {{ activeTypers.map(t => `${t.nickname}: ${t.content || 'is typing...'}`).join(', ') }}
-          </span>
+          <div v-for="typer in activeTypers" :key="typer.nickname" 
+              class="cursor-pointer hover:underline"
+              @click="toggleTyperExpansion(typer.nickname)">
+            <span v-if="expandedTypers.includes(typer.nickname)">
+              {{ typer.nickname }}: {{ typer.content }}
+            </span>
+            <span v-else>
+              {{ typer.nickname }} is typing...
+            </span>
+          </div>
         </div>
       </div>
 
@@ -140,7 +147,7 @@ onMounted(() => {
 watch(() => props.activeChannel, async (newChannel) => {
   console.log('new channle', newChannel)
   if (newChannel) {
-    store.commit('channels/SET_ACTIVE', newChannel)
+    // store.commit('channels/SET_ACTIVE', newChannel)
     // store.getters['channels/currentMessages']
   }
 }, { immediate: true })
@@ -195,9 +202,20 @@ const text = ref('')
 const TYPING_TIMEOUT = 3000
 let typingTimeout: ReturnType<typeof setTimeout> | null = null
 
+const expandedTypers = ref<string[]>([]);
+
+
 const typingUsers = computed(() => {
     return store.getters['channels/typingUsers'](props.activeChannel)
 })
+
+const toggleTyperExpansion = (nickname: string) => {
+  if (expandedTypers.value.includes(nickname)) {
+    expandedTypers.value = expandedTypers.value.filter(n => n !== nickname);
+  } else {
+    expandedTypers.value.push(nickname);
+  }
+};
 
 const activeTypers = computed(() => {
   const now = Date.now()
@@ -215,11 +233,12 @@ const activeTypers = computed(() => {
   return (Object.entries(typingUsers.value) as [string, TypingUser][])
     .filter(([_, typer]) => now - typer.timestamp < TYPING_TIMEOUT)
     .filter(([_, typer]) => typer.user.nickname !== currentUser.value?.nickname)
+    .filter(([_, typer]) => !typer.user.content?.content?.startsWith('/'))
     .map(([_, typer]) => ({
       nickname: typer.user.nickname,
       content: typer.user.content.content
     }))
-})
+});
 
 // Update text watcher
 watch(text, (newValue) => {
