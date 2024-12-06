@@ -83,3 +83,74 @@ export const showInAppNotification = (
         channel
     );
 };
+
+/**
+ * Notification system permissions
+ */
+
+export interface NotificationPermissionState {
+    isGranted: boolean;
+    isDenied: boolean;
+    isDefault: boolean;
+}
+
+export const checkNotificationPermission = (): NotificationPermissionState => {
+    if (!('Notification' in window)) {
+        return {
+            isGranted: false,
+            isDenied: true,
+            isDefault: false
+        };
+    }
+
+    return {
+        isGranted: Notification.permission === 'granted',
+        isDenied: Notification.permission === 'denied',
+        isDefault: Notification.permission === 'default'
+    };
+};
+
+export const requestNotificationPermission = async (): Promise<NotificationPermissionState> => {
+    // If notifications aren't supported, return early
+    if (!('Notification' in window)) {
+        return {
+            isGranted: false,
+            isDenied: true,
+            isDefault: false
+        };
+    }
+
+    // If already granted, no need to request again
+    if (Notification.permission === 'granted') {
+        return {
+            isGranted: true,
+            isDenied: false,
+            isDefault: false
+        };
+    }
+
+    // If already denied, we can't request again
+    if (Notification.permission === 'denied') {
+        return {
+            isGranted: false,
+            isDenied: true,
+            isDefault: false
+        };
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        return {
+            isGranted: permission === 'granted',
+            isDenied: permission === 'denied',
+            isDefault: permission === 'default'
+        };
+    } catch (error) {
+        console.error('Failed to request notification permission:', error);
+        return {
+            isGranted: false,
+            isDenied: false,
+            isDefault: true
+        };
+    }
+};

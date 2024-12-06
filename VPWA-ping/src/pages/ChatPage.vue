@@ -141,7 +141,6 @@
         <q-expansion-item
           icon="mood"
           label="Status"
-          caption="Set your availability"
           header-class="text-white"
           expand-separator
         >
@@ -205,7 +204,7 @@
 
 <script setup lang="ts">
 import ChatComponent from '../components/ChatComponent.vue';
-import { ref, Ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useQuasar, QNotifyCreateOptions } from 'quasar'
 import { useStore } from 'src/store'
 import { useRouter } from 'vue-router'
@@ -293,7 +292,6 @@ const selectChannel = (channel: string) => {
   store.commit('channels/SET_ACTIVE', channel)
 
   selectedChannel.value = channel
-  console.log('select', selectedChannel.value)
 }
 
 // User state management
@@ -302,20 +300,6 @@ const userState = ref<UserState>('online')
 const setUserStatus = (status: UserState) => {
   userState.value = status
   activityService.updateUserState(status)
-
-  const message = {
-    online: 'You are now online',
-    offline: 'You appear offline to others',
-    dnd: 'Do Not Disturb mode activated'
-  }[status]
-
-  const color = {
-    online: 'positive',
-    offline: 'grey',
-    dnd: 'warning'
-  }[status]
-
-  showNotification(message, color)
 }
 
 const getStateIcon = computed(() => ({
@@ -356,61 +340,62 @@ import {
   createNotificationContent,
   showBrowserNotification,
   showInAppNotification,
-  type NotificationData
+  checkNotificationPermission, 
+  requestNotificationPermission,
 } from 'src/utils';
 
-watch(
-  () => store.state.channels.pendingNotification,
-  async (notification: NotificationData | null) => {
-    if (!notification || !currentUser?.nickname) return;
+const notificationPermission = ref(checkNotificationPermission());
 
-    const shouldNotify = shouldShowNotification(
-      notification.message,
-      MessageMention.value,
-      currentUser.nickname,
-      userState.value
-    );
+watch(() => store.state.channels.pendingNotification, async (notification) => {
+  if (!notification) return;
+  
+  const { channel, message } = notification;
+  
+  const shouldNotify = shouldShowNotification(message, MessageMention.value, 
+    currentUser?.nickname || '', userState.value);
+  
+  if (!shouldNotify) return;
+  
+  const content = createNotificationContent(message, channel, 
+    currentUser?.nickname || '', truncateText);
 
-    if (!shouldNotify) return;
-
-    const content = createNotificationContent(
-      notification.message,
-      notification.channel,
-      currentUser.nickname,
-      truncateText
-    );
-
-    if (!$q.appVisible) {
-      showBrowserNotification(content, notification.channel, selectChannel);
-    } else {
-      showInAppNotification(content, notification.channel, showNotification);
+  // For browser notifications, check permission first
+  if (!$q.appVisible) {
+    if (!notificationPermission.value.isGranted) {
+      if (!notificationPermission.value.isDenied) {
+        notificationPermission.value = await requestNotificationPermission();
+      }
     }
+    
+    // Show browser notification if permitted
+    if (notificationPermission.value.isGranted) {
+      showBrowserNotification(content, channel, selectChannel);
+    } else {
+      showInAppNotification(content, channel, showNotification);
+    }
+  } else {
+    showInAppNotification(content, channel, showNotification);
   }
-);
+});
 
-// Simple toggle function
 const toggleMentionOnly = () => {
     MessageMention.value = !MessageMention.value
 }
 
-// for updating when leaving
-
-// Add this watch to handle initial channel and subsequent changes
+// initial channel and subsequent changes
 watch(
   () => channels.value,
   (newChannels) => {
-    // For initial load or when no channels
     if (!selectedChannel.value && newChannels.length > 0) {
-      console.log("Channels")
       selectedChannel.value = newChannels[0];
       store.commit('channels/SET_ACTIVE', newChannels[0]);
     }
-    // When channel is removed
+
     else if (selectedChannel.value && !newChannels.includes(selectedChannel.value)) {
       selectedChannel.value = newChannels[0] || 'general';
       store.commit('channels/SET_ACTIVE', newChannels[0] || 'general');
     }
-    // When a new channel is joined (it will be first in the array)
+
     else if (newChannels.length > 0 && selectedChannel.value !== newChannels[0]) {
       selectedChannel.value = newChannels[0];
       store.commit('channels/SET_ACTIVE', newChannels[0]);
@@ -419,7 +404,6 @@ watch(
   { immediate: true }
 );
 
-// Modify your existing showNotification function
 const showNotification = (
   message: string, 
   type: string = 'info', 
@@ -428,13 +412,15 @@ const showNotification = (
 ) => {
   const notifyOptions: QNotifyCreateOptions = {
     message,
-    position: 'top-right',
+    position: 'top',
     color: type,
     timeout,
+    html: true, // Enable HTML content
     actions: [
       { 
         label: channelName ? 'Open' : 'Dismiss',
         color: 'white',
+        flat: true,
         handler: () => {
           if (channelName) {
             selectChannel(channelName)
@@ -442,9 +428,20 @@ const showNotification = (
         }
       }
     ],
-    classes: 'notification-message sf-pro-500'
+    classes: `notification-message bg-${type} sf-pro-500`,
+    icon: getNotificationIcon(type),
   }
   $q.notify(notifyOptions)
+}
+
+const getNotificationIcon = (type: string): string => {
+  const icons = {
+    info: 'info',
+    positive: 'check_circle',
+    negative: 'error',
+    warning: 'warning'
+  }
+  return icons[type as keyof typeof icons] || 'info'
 }
 
 // Utility functions
@@ -477,31 +474,18 @@ const initializeChannels = async () => {
   }
 }
 
-const requestNotificationPermission = async () => {
-  console.log('requesting notification')
-  try {
-    console.log('requesting notification')
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
-  } catch (error) {
-    console.error('Error requesting notification permission:', error);
-    return false;
-  }
-};
-
 onMounted(async () => {
   try {
-    await requestNotificationPermission();
-    await initializeChannels()
-    activityService.updateUserState('online')
+    notificationPermission.value = await requestNotificationPermission();
+    await initializeChannels();
+    activityService.updateUserState('online');
   } catch (error) {
-    showNotification('Error initializing channels', 'error')
+    showNotification('Error initializing channels', 'error');
   }
-})
+});
 </script>
 
 <style scoped>
-
 .message-header .sender {
   margin-right: 10px;
 }
@@ -543,5 +527,70 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.1); /* Light background effect */
 }
 
+.notification-message {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 8px;
+  animation: slideIn 0.3s ease-out;
+}
 
+.notification-message.bg-info {
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+  border-left: 4px solid #0D47A1;
+}
+
+.notification-message.bg-positive {
+  background: linear-gradient(135deg, #4CAF50, #388E3C);
+  border-left: 4px solid #1B5E20;
+}
+
+.notification-message.bg-negative {
+  background: linear-gradient(135deg, #F44336, #D32F2F);
+  border-left: 4px solid #B71C1C;
+}
+
+.notification-message.bg-warning {
+  background: linear-gradient(135deg, #FFC107, #FFA000);
+  border-left: 4px solid #FF6F00;
+}
+
+.notification-message .q-notification__message {
+  font-size: 14px;
+  line-height: 1.4;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.notification-message .q-notification__actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.notification-message .q-btn {
+  padding: 4px 12px;
+  text-transform: none;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.notification-message .q-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 </style>
