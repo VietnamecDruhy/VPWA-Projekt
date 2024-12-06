@@ -9,7 +9,10 @@ class ActivitySocketManager extends SocketManager {
   private currentState: UserState = 'online';
   private lastOnlineTimestamp: string | null = null;  // Add this property
 
+
   public subscribe({ store }: BootParams): void {
+    console.log('ActivitySocketManager subscribe called')
+
     this.socket.on('connect', () => {
       console.log('Activity socket connected');
     });

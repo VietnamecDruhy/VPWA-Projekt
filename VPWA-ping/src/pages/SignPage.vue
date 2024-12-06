@@ -145,7 +145,7 @@ export default defineComponent({
       } else {
         store
           .dispatch('auth/login', state.credentials)
-          .then(() => router.push('/chat'))
+          .then(() => router.push({ name: 'home' }))  // Changed from '/chat' to named route
           .catch(() => {
             // Show error notification for login
             showNotification(
@@ -169,11 +169,12 @@ export default defineComponent({
     };
 
 
-    onMounted(() => {
-      console.log('Hello')
-      console.log('Store Getters:', store.getters)
+    onMounted(async () => {
+      const isAuthenticated = await store.dispatch('auth/check')
+      if (isAuthenticated) {
+        router.push({ name: 'home' })
+      }
     })
-
     return {
       ...toRefs(state), // Expose state properties individually for template binding
       toggleForm,

@@ -1,7 +1,9 @@
 import Ws from '@ioc:Ruby184/Socket.IO/Ws'
 
+
 // Root namespace only for channel loading
 Ws.namespace('/')
+  // .middleware('auth')  // Add this line
   .on('loadChannels', 'MessageController.loadChannels')
 
 // Activity tracking namespace

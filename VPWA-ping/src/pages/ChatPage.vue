@@ -253,14 +253,12 @@ const leaveChannel = async (channel: string) => {
 
 const logout = async () => {
   try {
-    // First disconnect all sockets
     channels.value.forEach((channel: string) => {
       ChannelService.closeConnection(channel);
     });
     
-    // Then handle logout and navigation
     await store.dispatch('auth/logout')
-    router.push('/')
+    router.push({ name: 'login' })
   } catch (error) {
     showNotification('Failed to logout', 'negative')
   }
