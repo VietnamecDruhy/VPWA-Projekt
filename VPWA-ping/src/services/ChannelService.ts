@@ -26,6 +26,15 @@ class ChannelSocketManager extends SocketManager {
     return ChannelSocketManager.serviceInstance;
   }
 
+  public kickUser(username: string): Promise<void> {
+    return this.emitAsync('kickUser', username);
+  }
+
+  public inviteUser(username: string): Promise<void> {
+    return this.emitAsync('inviteUser', username);
+  }
+
+
   public subscribe({ store }: BootParams): void {
     const channel = this.namespace.split('/').pop() as string;
 
@@ -76,6 +85,32 @@ class ChannelSocketManager extends SocketManager {
     // Handle disconnect event
     this.socket.on('disconnect', (reason) => {
       console.log(`Socket disconnected for channel ${channel}. Reason: ${reason}`);
+    });
+
+    this.socket.on('userKicked', (data: {
+      channelName: string;
+      username: string;
+      byOwner?: boolean;
+      byVote?: boolean;
+      kickedUserId: number
+    }) => {
+      store.commit('channels/HANDLE_USER_KICKED', data);
+    });
+
+    this.socket.on('userKickVoted', (data: {
+      channelName: string;
+      username: string;
+      kicks: number
+    }) => {
+      store.commit('channels/UPDATE_USER_KICKS', data);
+    });
+
+    this.socket.on('userInvited', (data: { channelName: string; username: string }) => {
+      store.commit('channels/ADD_CHANNEL_MEMBER', data);
+      store.commit('channels/ADD_SYSTEM_MESSAGE', {
+        channel: data.channelName,
+        content: `${data.username} was invited to the channel`
+      });
     });
   }
 
