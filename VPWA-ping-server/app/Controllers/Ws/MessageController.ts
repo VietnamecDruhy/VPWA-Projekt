@@ -5,6 +5,8 @@ import { inject } from '@adonisjs/core/build/standalone'
 import User from "App/Models/User";
 import Channel from "App/Models/Channel";
 import Database from '@ioc:Adonis/Lucid/Database';
+import Ws from '@ioc:Ruby184/Socket.IO/Ws';
+
 
 // inject repository from container to controller constructor
 // we do so because we can extract database specific storage to another class
@@ -87,6 +89,11 @@ export default class MessageController {
           user_id: auth.user!.id,
           created_at: new Date(Date.now()),
           updated_at: new Date(Date.now()),
+        });
+
+        socket.broadcast.to(params.name).emit('userJoined', {
+          channelName: channel.name,
+          username: auth.user!.nickname
         });
       }
 
@@ -302,6 +309,11 @@ export default class MessageController {
         .where('user_id', userToRevoke.id)
         .delete()
 
+      Ws.io.emit('revoked', {
+        channelName: channel.name,
+        username: userToRevoke.nickname
+      });
+
       // Notify all users in the channel
       socket.broadcast.to(params.name).emit('userRevoked', {
         channelName: channel.name,
@@ -311,6 +323,7 @@ export default class MessageController {
         channelName: channel.name,
         username: userToRevoke.nickname
       })
+
     } catch (error) {
       console.error('Error revoking user:', error)
       socket.emit('error', { message: error.message || 'Failed to revoke user' })
@@ -420,19 +433,25 @@ export default class MessageController {
         .first();
 
       if (existingMembership) {
-        if (existingMembership.is_kicked) {
-          // Only owner can reinvite kicked users
-          if (channel.ownerId !== auth.user!.id) {
-            throw new Error('Only channel owner can invite kicked users');
-          }
-        } else {
-          throw new Error('User is already a member of this channel');
-        }
+        throw new Error('User is already a member of this channel');
       }
 
       // For private channels, only owner can invite
       if (channel.isPrivate && channel.ownerId !== auth.user!.id) {
-        throw new Error('Only channel owner can invite users to private channels');
+        throw new Error('Only channel owner can add users to private channels');
+      }
+
+      // For public channels, check if inviter is a member
+      if (!channel.isPrivate) {
+        const inviterIsMember = await Database
+          .from('channel_users')
+          .where('channel_id', channel.id)
+          .where('user_id', auth.user!.id)
+          .first();
+
+        if (!inviterIsMember) {
+          throw new Error('You must be a member of the channel to add others');
+        }
       }
 
       // Add user to channel
@@ -445,13 +464,22 @@ export default class MessageController {
         is_kicked: false
       });
 
-      socket.broadcast.to(params.name).emit('userInvited', {
+      // Signal to the invited user to refresh their state
+      // This will be broadcast to everyone but the frontend should
+      // only act on it if the username matches their own
+      Ws.io.emit('userInvited', {
         channelName: channel.name,
         username: userToInvite.nickname
       });
+
+      socket.emit('userJoined', {
+        channelName: channel.name,
+        username: userToInvite.nickname
+      });
+
     } catch (error) {
-      console.error('Error inviting user:', error);
-      socket.emit('error', { message: error.message || 'Failed to invite user' });
+      console.error('Error adding user:', error);
+      socket.emit('error', { message: error.message || 'Failed to add user' });
     }
   }
 }

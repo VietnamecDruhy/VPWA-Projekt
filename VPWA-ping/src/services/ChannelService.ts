@@ -92,6 +92,15 @@ class ChannelSocketManager extends SocketManager {
       service.closeConnection(channelName);
     });
 
+    this.socket.on('revoked', (data: { channelName: string, username: string }) => {
+      // Check if this event is meant for the current user
+      if (store.state.auth.user?.nickname === data.username) {
+        store.commit('channels/CLEAR_CHANNEL', data.channelName);
+        const service = (this.constructor as typeof ChannelSocketManager).getService();
+        service.closeConnection(data.channelName);
+      }
+    });
+
     this.socket.on('userRevoked', (data: { channelName: string; username: string }) => {
       store.commit('channels/REMOVE_CHANNEL_MEMBER', data);
     });
@@ -123,12 +132,17 @@ class ChannelSocketManager extends SocketManager {
       store.commit('channels/UPDATE_USER_KICKS', data);
     });
 
-    this.socket.on('userInvited', (data: { channelName: string; username: string }) => {
-      store.commit('channels/ADD_CHANNEL_MEMBER', data);
-      store.commit('channels/ADD_SYSTEM_MESSAGE', {
-        channel: data.channelName,
-        content: `${data.username} was invited to the channel`
-      });
+    this.socket.on('userInvited', async (data: { channelName: string; username: string }) => {
+      // Only handle the event if it's for the current user
+      const currentUser = store.state.auth.user;
+      if (currentUser?.nickname === data.username) {
+        // Trigger a join to refresh the channel state
+        try {
+          await store.dispatch('channels/join', data.channelName);
+        } catch (error) {
+          console.error('Error joining channel after invite:', error);
+        }
+      }
     });
   }
 

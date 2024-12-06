@@ -66,8 +66,7 @@
 
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted, watch, Ref, computed, defineComponent } from 'vue'
-import { useQuasar, QNotifyCreateOptions, scroll } from 'quasar'
+import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useStore } from 'src/store';
 import { SerializedMessage } from 'src/contracts'
 import { handleCommand } from 'src/utils';
@@ -143,14 +142,13 @@ onMounted(() => {
   }
 })
 
-// watch join channel to load messages, create socket to listen for new messages
-watch(() => props.activeChannel, async (newChannel) => {
-  console.log('new channle', newChannel)
-  if (newChannel) {
-    // store.commit('channels/SET_ACTIVE', newChannel)
-    // store.getters['channels/currentMessages']
-  }
-}, { immediate: true })
+// // watch join channel to load messages, create socket to listen for new messages
+// watch(() => props.activeChannel, async (newChannel) => {
+//   if (newChannel) {
+//     // store.commit('channels/SET_ACTIVE', newChannel)
+//     // store.getters['channels/currentMessages']
+//   }
+// }, { immediate: true })
 
 // get messages through store
 const messages = computed(() => {
@@ -294,7 +292,7 @@ const getUserStatusClass = (message: SerializedMessage): string => {
   const isChannelMember = channelMembers.some(member => member.id === message.author.id)
   
   if (!isChannelMember) {
-    return 'status-offline status-non-member'
+    return 'status-non-member'
   }
   
   const userState = store.getters['activity/getUserState'](message.author.id)
@@ -338,6 +336,12 @@ const formatTime = (timestamp: string): string => {
   const date1 = new Date(timestamp)
   return date1.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 }
+
+onUnmounted(() => {
+  if (chatContainer.value) {
+    chatContainer.value.removeEventListener('scroll', infiniteScroll)
+  }
+})
 </script>
 
 
@@ -442,12 +446,9 @@ const formatTime = (timestamp: string): string => {
 
 .status-non-member::after {
   content: '×';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   font-size: 8px;
-  color: #000;
+  color: #000000;
+  background-color: #9e9e9e; 
   font-weight: bold;
 }
 </style>
