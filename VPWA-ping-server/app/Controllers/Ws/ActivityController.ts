@@ -34,7 +34,6 @@ export default class ActivityController {
     }
 
     const onlineUsers = await User.findMany([...onlineIds]);
-    console.log('Sending online users list:', onlineUsers);
     socket.emit("user:list", onlineUsers);
   }
 
@@ -57,7 +56,6 @@ export default class ActivityController {
       socket.data.userState = state;
 
       // Notify all clients about the state change
-      console.log('Broadcasting state change to all clients');
       socket.broadcast.emit("user:stateChange", {  // Changed to broadcast
         userId: auth.user!.id,
         state: state

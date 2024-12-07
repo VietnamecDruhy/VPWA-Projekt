@@ -17,13 +17,14 @@ export default class extends BaseSchema {
     })
 
     this.defer(async (db) => {
+      const now = new Date().toISOString()
       await db.table(this.tableName).insert({
         id: -1,
         name: 'general',
         owner_id: -1,
         is_private: false,
-        created_at: new Date(),
-        updated_at: new Date()
+        created_at: now,
+        updated_at: now
       })
     })
   }

@@ -85,7 +85,7 @@ export const handleCommand = async (command: string, store: VuexStore<StateInter
       }
 
       try {
-        await store.dispatch('channels/revokeUser', {
+        await store.dispatch('channels/kickUser', {
           channel: currentChannel,
           username: args[0],
         });

@@ -128,10 +128,6 @@ const actions: ActionTree<ChannelsStateInterface, StateInterface> = {
         throw new Error('Channel not found');
       }
       await channelManager.kickUser(username);
-      commit('ADD_SYSTEM_MESSAGE', {
-        channel,
-        content: `Initiated kick for user ${username}`
-      });
     } catch (error) {
       commit('LOADING_ERROR', error);
       throw error;

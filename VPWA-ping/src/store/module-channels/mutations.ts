@@ -1,8 +1,6 @@
 // src/store/module-channels/mutations.ts
 import { MutationTree } from 'vuex'
 import { ChannelsStateInterface } from './state'
-import { StateInterface } from '../index'
-import { Store } from 'vuex'
 import { User, SerializedMessage } from 'src/contracts'
 
 
@@ -134,86 +132,6 @@ const mutation: MutationTree<ChannelsStateInterface> = {
         updatedAt: new Date().toISOString()
       };
       state.members[channelName].push(newUser);
-    }
-  },
-
-  HANDLE_USER_KICKED(state: ChannelsStateInterface, { channelName, username, kickedUserId }: { channelName: string, username: string, kickedUserId: number }, store?: Store<StateInterface>) {
-    const currentUser = store?.state.auth.user;
-
-    // Remove the channel if the current user is the one being kicked
-    if (currentUser && currentUser.id === kickedUserId) {
-      // Remove the channel from messages
-      if (state.messages[channelName]) {
-        delete state.messages[channelName];
-      }
-
-      // Remove from members
-      if (state.members[channelName]) {
-        delete state.members[channelName];
-      }
-
-      // Clear active channel if it's the current one
-      if (state.active === channelName) {
-        state.active = null;
-      }
-    } else {
-      // If another user was kicked, just update the members list
-      if (state.members[channelName]) {
-        state.members[channelName] = state.members[channelName].filter(
-          member => member.nickname !== username
-        );
-      }
-    }
-
-    // Add kick message directly to state
-    if (state.messages[channelName]) {
-      const systemUser: User = {
-        id: -1,
-        nickname: 'system',
-        email: 'system@system.com',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      const message: SerializedMessage = {
-        id: Date.now(),
-        content: currentUser && currentUser.id === kickedUserId
-          ? `You have been kicked from ${channelName}`
-          : `${username} has been kicked from the channel`,
-        channelId: parseInt(channelName, 10) || -1,
-        userId: -1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        author: systemUser
-      };
-
-      state.messages[channelName].push(message);
-    }
-  },
-
-  UPDATE_USER_KICKS(state: ChannelsStateInterface, { channelName, username, kicks }: { channelName: string, username: string, kicks: number }) {
-    if (state.messages[channelName]) {
-      const votesNeeded = 3 - kicks;
-
-      const systemUser: User = {
-        id: -1,
-        nickname: 'system',
-        email: 'system@system.com',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      const message: SerializedMessage = {
-        id: Date.now(),
-        content: `${username} received a kick vote (${votesNeeded} more needed for kick)`,
-        channelId: parseInt(channelName, 10) || -1,
-        userId: -1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        author: systemUser
-      };
-
-      state.messages[channelName].push(message);
     }
   }
 }

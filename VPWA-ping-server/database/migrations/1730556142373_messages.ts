@@ -32,12 +32,13 @@ export default class extends BaseSchema {
     })
 
     this.defer(async (db) => {
+      const now = new Date().toISOString()
       await db.table(this.tableName).insert({
         message: 'Welcome to the general channel! This is a read-only channel for system announcements.',
-        channel_id: -1, // general channel id
-        user_id: -1,    // system user id
-        created_at: new Date(),
-        updated_at: new Date()
+        channel_id: -1,
+        user_id: -1,
+        created_at: now,
+        updated_at: now
       })
     })
   }

@@ -18,6 +18,114 @@ import Ws from '@ioc:Ruby184/Socket.IO/Ws';
 export default class MessageController {
   constructor(private messageRepository: MessageRepositoryContract) { }
 
+  private async createChannel(
+    name: string,
+    auth: any,
+    socket: any,
+    isPrivate: boolean
+  ) {
+    // Create a new channel
+    const channel = await Channel.create({
+      name,
+      ownerId: auth.user!.id,
+      isPrivate,
+    });
+
+    // Add the creator as the initial member
+    await Database.table('channel_users').insert({
+      channel_id: channel.id,
+      user_id: auth.user!.id,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    // Get system user from database
+    const systemUser = await Database
+      .from('users')
+      .where('nickname', 'system')
+      .first();
+
+    // Create system welcome message using channel relationship
+    const message = await channel.related('messages').create({
+      userId: systemUser.id,
+      content: isPrivate
+        ? `This is your very secret ${name} channel!`
+        : `Welcome to ${name} channel!`
+    });
+
+    // Load the author relationship
+    await message.load('author');
+
+    const serialized = message.serialize();
+    const welcomeMessage = {
+      id: serialized.id,
+      content: serialized.content,
+      channelId: serialized.channel_id,
+      userId: serialized.user_id,
+      createdAt: serialized.created_at,
+      updatedAt: serialized.updated_at,
+      author: {
+        id: serialized.author.id,
+        email: serialized.author.email,
+        nickname: serialized.author.nickname,
+        createdAt: serialized.author.created_at,
+        updatedAt: serialized.author.updated_at
+      }
+    };
+
+    // Get initial member details
+    const initialMember = await Database
+      .from('users')
+      .where('id', auth.user!.id)
+      .select('id', 'nickname', 'email')
+      .first();
+
+    console.log('Welcome,', welcomeMessage)
+    // Join socket room and emit initial state
+    socket.join(name);
+    socket.emit('loadMessages:response', {
+      messages: [welcomeMessage],
+      channelInfo: {
+        name: channel.name,
+        isPrivate: channel.isPrivate
+      }
+    });
+
+    socket.emit('channelMembers', [initialMember]);
+
+    return channel;
+  }
+
+  private async joinChannel(
+    channel: any,
+    auth: any,
+    socket: any,
+    channelName: string
+  ): Promise<boolean> {
+    const userIsInChannel = await Database.from('channel_users')
+      .where('channel_id', channel.id)
+      .andWhere('user_id', auth.user!.id)
+      .first();
+
+    if (!userIsInChannel) {
+      await Database.table('channel_users').insert({
+        channel_id: channel.id,
+        user_id: auth.user!.id,
+        created_at: new Date(Date.now()),
+        updated_at: new Date(Date.now()),
+      });
+
+      socket.broadcast.to(channelName).emit('userJoined', {
+        channelName: channel.name,
+        username: auth.user!.nickname
+      });
+
+      return true;  // User was newly added
+    }
+
+    return false;  // User was already in channel
+  }
+
   public async loadMessages(
     { params, socket, auth }: WsContextContract,
     { messageId, isPrivate }: { messageId?: string; isPrivate?: boolean } = {}
@@ -30,38 +138,7 @@ export default class MessageController {
         if (isPrivate === undefined) {
           throw new Error('Channel does not exist');
         }
-        // Create a new channel if it doesn't exist and assign `isPrivate`
-        channel = await Channel.create({
-          name,
-          ownerId: auth.user!.id,
-          isPrivate,
-        });
-
-        // Add the creator as the initial member of the channel
-        await Database.table('channel_users').insert({
-          channel_id: channel.id,
-          user_id: auth.user!.id,
-          created_at: new Date(Date.now()),
-          updated_at: new Date(Date.now()),
-        });
-
-        socket.join(name);
-        socket.emit('loadMessages:response', {
-          messages: [],
-          channelInfo: {
-            name: channel.name,
-            isPrivate: channel.isPrivate
-          }
-        });
-
-        // Emit initial members list (just the creator)
-        const initialMember = await Database
-          .from('users')
-          .where('id', auth.user!.id)
-          .select('id', 'nickname', 'email')
-          .first();
-
-        socket.emit('channelMembers', [initialMember]);
+        channel = await this.createChannel(name, auth, socket, isPrivate);
         return;
       }
 
@@ -77,25 +154,8 @@ export default class MessageController {
         }
       }
 
-      // Add the user to the channel if they are not already in it
-      const userIsInChannel = await Database.from('channel_users')
-        .where('channel_id', channel.id)
-        .andWhere('user_id', auth.user!.id)
-        .first();
-
-      if (!userIsInChannel) {
-        await Database.table('channel_users').insert({
-          channel_id: channel.id,
-          user_id: auth.user!.id,
-          created_at: new Date(Date.now()),
-          updated_at: new Date(Date.now()),
-        });
-
-        socket.broadcast.to(params.name).emit('userJoined', {
-          channelName: channel.name,
-          username: auth.user!.nickname
-        });
-      }
+      // Add user to channel if not already a member
+      await this.joinChannel(channel, auth, socket, name);
 
       // Fetch messages
       const messages = await this.messageRepository.getAll(name, messageId);
@@ -107,8 +167,9 @@ export default class MessageController {
         .where('channel_users.channel_id', channel.id)
         .select('users.id', 'users.nickname', 'users.email');
 
-      // Join the socket room
-      socket.join(name);
+      // Join with full namespace
+      const roomName = `channels/${name}`;
+      await socket.join(roomName);
 
       // Emit messages with channel info
       socket.emit('loadMessages:response', {
@@ -129,6 +190,12 @@ export default class MessageController {
   }
 
   public async addMessage({ params, socket, auth }: WsContextContract, content: string) {
+
+    if (params.name === 'general') {
+      socket.emit('error', { message: 'Cannot send messages in the general channel' });
+      return;
+    }
+
     const message = await this.messageRepository.create(params.name, auth.user!.id, content)
     // broadcast message to other users in channel
     socket.broadcast.emit('message', message)
@@ -197,6 +264,8 @@ export default class MessageController {
   }
 
   public async leaveChannel({ params, socket, auth }: WsContextContract) {
+    const roomName = `channels/${params.name}`;
+
     try {
       const channel = await Channel.findByOrFail('name', params.name)
       const userId = auth.user!.id
@@ -222,27 +291,20 @@ export default class MessageController {
         await channel.delete()
 
         // Notify all users in the channel that it's been deleted
-        socket.broadcast.to(params.name).emit('channelDeleted', channel.name)
+        socket.to(roomName).emit('channelDeleted', channel.name)
         socket.emit('channelDeleted', channel.name)
       } else {
-        // Just remove the user from channel_users
-        await Database
-          .from('channel_users')
-          .where('channel_id', channel.id)
-          .where('user_id', userId)
-          .delete()
+        const result = await this.revokeUser(channel, auth.user!);
 
-        const leavingUser = await User.findOrFail(userId)
-        socket.broadcast.to(params.name).emit('userRevoked', {
-          channelName: channel.name,
-          username: leavingUser.nickname
-        })
+        // Channel-specific broadcasts
+        socket.to(roomName).emit('userRevoked', result);
+        socket.emit('userRevoked', result);
 
         socket.emit('leftChannel', channel.name)
       }
 
       // Clean up socket connection
-      socket.leave(params.name)
+      socket.leave(roomName)
     } catch (error) {
       console.error('Error leaving channel:', error)
       socket.emit('error', { message: error.message || 'Failed to leave channel' })
@@ -250,6 +312,8 @@ export default class MessageController {
   }
 
   public async deleteChannel({ params, socket, auth }: WsContextContract) {
+    const roomName = `channels/${params.name}`;
+
     try {
       const channel = await Channel.findByOrFail('name', params.name)
 
@@ -268,7 +332,7 @@ export default class MessageController {
       await channel.delete()
 
       // Notify all users in the channel
-      socket.broadcast.to(params.name).emit('channelDeleted', channel.name)
+      socket.broadcast.to(roomName).emit('channelDeleted', channel.name)
       socket.emit('channelDeleted', channel.name)
 
       // Clean up socket connection
@@ -279,58 +343,24 @@ export default class MessageController {
     }
   }
 
-  public async revokeUser({ params, socket, auth }: WsContextContract, username: string) {
-    try {
-      const channel = await Channel.findByOrFail('name', params.name)
+  private async revokeUser(channel: Channel, userToRevoke: User) {
+    // Remove user from channel
+    await Database
+      .from('channel_users')
+      .where('channel_id', channel.id)
+      .where('user_id', userToRevoke.id)
+      .delete();
 
-      // Verify user is the owner
-      if (channel.ownerId !== auth.user!.id) {
-        throw new Error('Only channel owner can revoke users')
-      }
-
-      // Find user to revoke
-      const userToRevoke = await User.findByOrFail('nickname', username)
-
-      // Check if user is in channel
-      const membership = await Database
-        .from('channel_users')
-        .where('channel_id', channel.id)
-        .where('user_id', userToRevoke.id)
-        .first()
-
-      if (!membership) {
-        throw new Error('User is not a member of this channel')
-      }
-
-      // Remove user from channel
-      await Database
-        .from('channel_users')
-        .where('channel_id', channel.id)
-        .where('user_id', userToRevoke.id)
-        .delete()
-
-      Ws.io.emit('revoked', {
-        channelName: channel.name,
-        username: userToRevoke.nickname
-      });
-
-      // Notify all users in the channel
-      socket.broadcast.to(params.name).emit('userRevoked', {
-        channelName: channel.name,
-        username: userToRevoke.nickname
-      })
-      socket.emit('userRevoked', {
-        channelName: channel.name,
-        username: userToRevoke.nickname
-      })
-
-    } catch (error) {
-      console.error('Error revoking user:', error)
-      socket.emit('error', { message: error.message || 'Failed to revoke user' })
-    }
+    return {
+      channelName: channel.name,
+      username: userToRevoke.nickname
+    };
   }
 
-  public async kickUser({ params, socket, auth }: WsContextContract, username: string) {
+  public async kickUser(wsContext: WsContextContract, username: string) {
+    const { params, socket, auth } = wsContext;
+    const roomName = `channels/${params.name}`;
+
     try {
       const channel = await Channel.findByOrFail('name', params.name);
       const userToKick = await User.findByOrFail('nickname', username);
@@ -346,81 +376,76 @@ export default class MessageController {
         throw new Error('User is not a member of this channel');
       }
 
-      // If requester is owner, kick immediately
+      // If requester is owner, revoke immediately
       if (channel.ownerId === auth.user!.id) {
-        await Database
-          .from('channel_users')
-          .where('channel_id', channel.id)
-          .where('user_id', userToKick.id)
-          .delete();  // Remove them from channel_users
+        const result = await this.revokeUser(channel, userToKick);
 
-        socket.to(params.name).emit('userKicked', {
-          channelName: channel.name,
-          username: userToKick.nickname,
-          byOwner: true,
-          kickedUserId: userToKick.id
-        });
+        // Global broadcast to handle all user's sockets/tabs
+        Ws.io.emit('revoked', result);
 
-        socket.emit('userKicked', {
-          channelName: channel.name,
-          username: userToKick.nickname,
-          byOwner: true,
-          kickedUserId: userToKick.id
-        });
-
+        // Channel-specific broadcasts
+        socket.to(roomName).emit('userRevoked', result);
+        socket.emit('userRevoked', result);
         return;
       }
 
-      // If not owner, increment kick counter
-      const updatedKicks = membership.kicks + 1;
+      // Check if this user has already kicked the target
+      const existingKick = await Database
+        .from('kicks')
+        .where('channel_id', channel.id)
+        .where('kicked_id', userToKick.id)
+        .where('user_id', auth.user!.id)
+        .first();
 
-      if (updatedKicks >= 3) {
-        // If enough kicks, remove from channel
-        await Database
-          .from('channel_users')
-          .where('channel_id', channel.id)
-          .where('user_id', userToKick.id)
-          .delete();
+      if (existingKick) {
+        throw new Error('You have already voted to kick this user');
+      }
 
-        socket.to(params.name).emit('userKicked', {
-          channelName: channel.name,
-          username: userToKick.nickname,
-          byVote: true,
-          kickedUserId: userToKick.id  // Make sure to include the numeric ID
-        });
+      // Record the new kick
+      await Database.table('kicks').insert({
+        channel_id: channel.id,
+        kicked_id: userToKick.id,
+        user_id: auth.user!.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
 
-        socket.emit('userKicked', {
-          channelName: channel.name,
-          username: userToKick.nickname,
-          byVote: true,
-          kickedUserId: userToKick.id
-        });
-      } else {
-        await Database
-          .from('channel_users')
-          .where('channel_id', channel.id)
-          .where('user_id', userToKick.id)
-          .update({ kicks: updatedKicks });
+      // Count total unique kicks for this user in this channel
+      const kickCount = await Database
+        .from('kicks')
+        .where('channel_id', channel.id)
+        .where('kicked_id', userToKick.id)
+        .countDistinct('user_id as total');
 
-        socket.to(params.name).emit('userKickVoted', {
-          channelName: channel.name,
-          username: userToKick.nickname,
-          kicks: updatedKicks
-        });
+      const totalKicks = kickCount[0].total;
 
-        socket.emit('userKickVoted', {
-          channelName: channel.name,
-          username: userToKick.nickname,
-          kicks: updatedKicks
-        });
+      if (totalKicks >= 3) {
+        // If enough kicks accumulated, revoke user
+        const result = await this.revokeUser(channel, userToKick);
+
+        // Global broadcast to handle all user's sockets/tabs
+        Ws.io.emit('revoked', result);
+
+        socket.to(roomName).emit('userRevoked', result);
+        socket.emit('userRevoked', result);
+      }
+      else {
+        // Load and broadcast the message to all clients
+        const message = await this.messageRepository.create(params.name, -1,
+          `${username} received a kick vote (${3 - totalKicks} more needed for kick)`)
+        // broadcast message to other users in channel
+        socket.broadcast.emit('message', message)
+        // return message to sender
+        socket.emit('message', message)
       }
     } catch (error) {
-      console.error('Error kicking user:', error);
       socket.emit('error', { message: error.message || 'Failed to kick user' });
     }
   }
 
   public async inviteUser({ params, socket, auth }: WsContextContract, username: string) {
+    const roomName = `channels/${params.name}`;
+
     try {
       const channel = await Channel.findByOrFail('name', params.name);
       const userToInvite = await User.findByOrFail('nickname', username);
@@ -460,14 +485,18 @@ export default class MessageController {
         user_id: userToInvite.id,
         created_at: new Date(),
         updated_at: new Date(),
-        kicks: 0,
-        is_kicked: false
       });
 
       // Signal to the invited user to refresh their state
       // This will be broadcast to everyone but the frontend should
       // only act on it if the username matches their own
       Ws.io.emit('userInvited', {
+        channelName: channel.name,
+        username: userToInvite.nickname
+      });
+
+
+      socket.to(roomName).emit('userJoined', {
         channelName: channel.name,
         username: userToInvite.nickname
       });

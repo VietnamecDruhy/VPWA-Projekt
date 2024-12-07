@@ -114,24 +114,6 @@ class ChannelSocketManager extends SocketManager {
       console.log(`Socket disconnected for channel ${channel}. Reason: ${reason}`);
     });
 
-    this.socket.on('userKicked', (data: {
-      channelName: string;
-      username: string;
-      byOwner?: boolean;
-      byVote?: boolean;
-      kickedUserId: number
-    }) => {
-      store.commit('channels/HANDLE_USER_KICKED', data);
-    });
-
-    this.socket.on('userKickVoted', (data: {
-      channelName: string;
-      username: string;
-      kicks: number
-    }) => {
-      store.commit('channels/UPDATE_USER_KICKS', data);
-    });
-
     this.socket.on('userInvited', async (data: { channelName: string; username: string }) => {
       // Only handle the event if it's for the current user
       const currentUser = store.state.auth.user;

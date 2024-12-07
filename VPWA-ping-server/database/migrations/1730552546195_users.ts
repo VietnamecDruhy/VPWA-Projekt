@@ -20,14 +20,15 @@ export default class extends BaseSchema {
     })
 
     this.defer(async (db) => {
+      const now = new Date().toISOString()
       await db.table(this.tableName).insert({
         id: -1,
         email: 'system@system.com',
         password: await Hash.make('system'),
         name: 'System',
         nickname: 'system',
-        created_at: new Date(),
-        updated_at: new Date()
+        created_at: now,
+        updated_at: now
       })
     })
   }
