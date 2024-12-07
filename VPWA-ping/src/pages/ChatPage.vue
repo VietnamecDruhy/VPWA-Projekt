@@ -257,10 +257,17 @@ const logout = async () => {
       ChannelService.closeConnection(channel);
     });
     
-    await store.dispatch('auth/logout')
-    router.push({ name: 'login' })
+    activityService.updateUserState('offline');
+    
+    // 4. Clear all store state
+    await store.dispatch('auth/logout');
+    
+    // 5. Navigate to login page
+    router.push({ name: 'login' });
+    
   } catch (error) {
-    showNotification('Failed to logout', 'negative')
+    console.error('Logout error:', error);
+    showNotification('Failed to logout', 'negative');
   }
 }
 
@@ -475,6 +482,16 @@ const initializeChannels = async () => {
 }
 
 onMounted(async () => {
+  // Check for fresh login flag
+  const isFreshLogin = localStorage.getItem('fresh_login') === 'true'
+  if (isFreshLogin) {
+    // Clear the flag
+    localStorage.removeItem('fresh_login')
+    // Reload the page
+    window.location.reload()
+    return
+  }
+
   try {
     notificationPermission.value = await requestNotificationPermission();
     await initializeChannels();

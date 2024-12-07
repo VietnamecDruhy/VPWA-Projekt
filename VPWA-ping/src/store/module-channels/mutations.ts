@@ -133,6 +133,17 @@ const mutation: MutationTree<ChannelsStateInterface> = {
       };
       state.members[channelName].push(newUser);
     }
+  },
+  RESET_STATE(state) {
+    // Reset to initial state
+    state.loading = false;
+    state.error = null;
+    state.messages = {};
+    state.active = null;
+    state.isPrivate = {};
+    state.members = {};
+    state.typingUsers = {};
+    state.pendingNotification = null;
   }
 }
 
