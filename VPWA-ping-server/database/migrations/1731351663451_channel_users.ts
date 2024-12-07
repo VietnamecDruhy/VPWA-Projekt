@@ -25,16 +25,6 @@ export default class extends BaseSchema {
         .inTable('channels')
         .onDelete('CASCADE')
 
-      // New columns for kick functionality
-      table.integer('kicks').defaultTo(0).notNullable()
-      table.boolean('is_kicked').defaultTo(false).notNullable()
-      table.integer('kicked_by')
-        .unsigned()
-        .nullable()
-        .references('id')
-        .inTable('users')
-        .onDelete('SET NULL')
-
       // Add unique constraint
       table.unique(['user_id', 'channel_id'])
 

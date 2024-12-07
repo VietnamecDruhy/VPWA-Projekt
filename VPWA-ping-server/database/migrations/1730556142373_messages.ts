@@ -30,6 +30,16 @@ export default class extends BaseSchema {
       table.timestamp('created_at', { useTz: true })
       table.timestamp('updated_at', { useTz: true })
     })
+
+    this.defer(async (db) => {
+      await db.table(this.tableName).insert({
+        message: 'Welcome to the general channel! This is a read-only channel for system announcements.',
+        channel_id: -1, // general channel id
+        user_id: -1,    // system user id
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+    })
   }
 
   public async down() {
