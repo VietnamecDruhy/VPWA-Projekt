@@ -15,8 +15,6 @@ const mutation: MutationTree<ChannelsStateInterface> = {
     messages: SerializedMessage[],
     isPrivate?: boolean
   }) {
-    console.log('Loading success:', channel, messages, isPrivate);
-    console.log('isPrivate:', isPrivate)
     state.loading = false;
 
     // Initialize messages array if it doesn't exist

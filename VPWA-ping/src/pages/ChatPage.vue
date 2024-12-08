@@ -22,23 +22,13 @@
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          <q-input
-            v-model="newChannelName"
-            label="Channel Name"
-            dense
-            dark
-            outlined
-            :rules="[
-              val => !!val || 'Channel name is required',
-              val => val.length <= 20 || 'Channel name must be 20 characters or less'
-            ]"
-          />
+          <q-input v-model="newChannelName" label="Channel Name" dense dark outlined :rules="[
+            val => !!val || 'Channel name is required',
+            val => val.length <= 20 || 'Channel name must be 20 characters or less',
+            val => !val.includes(' ') || 'Channel name cannot contain spaces'
+          ]" />
 
-          <q-toggle
-            v-model="isPrivateChannel"
-            label="Private Channel"
-            class="q-mt-md"
-          />
+          <q-toggle v-model="isPrivateChannel" label="Private Channel" class="q-mt-md" />
 
           <div class="text-caption q-mt-sm text-grey-5">
             {{ isPrivateChannel ? 'Only invited members can join' : 'Anyone can join' }}
@@ -55,18 +45,15 @@
     <!-- Left Drawer -->
     <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered class="bg-dark sf-pro-600">
       <q-input dense debounce="300" placeholder="Search..." v-model="searchQuery" class="search-input q-ma-md" rounded
-               outlined clearable bg-color="white">
+        outlined clearable bg-color="white">
         <template v-slot:append>
           <q-icon name="search" />
         </template>
       </q-input>
 
       <q-list bordered>
-        <q-item v-for="(channel, index) in channels" :key="index"
-                class="text-white sf-pro-600 channel-item"
-                clickable v-ripple
-                @click="selectChannel(channel)"
-                :class="{
+        <q-item v-for="(channel, index) in channels" :key="index" class="text-white sf-pro-600 channel-item" clickable
+          v-ripple @click="selectChannel(channel)" :class="{
             'picked': selectedChannel === channel,
             'newest-channel': index === 0
           }">
@@ -138,12 +125,7 @@
         <q-item-label header class="text-white q-mb-md">Settings</q-item-label>
 
         <!-- User Status Settings -->
-        <q-expansion-item
-          icon="mood"
-          label="Status"
-          header-class="text-white"
-          expand-separator
-        >
+        <q-expansion-item icon="mood" label="Status" header-class="text-white" expand-separator>
           <q-list>
             <q-item clickable v-ripple @click="setUserStatus('online')" :active="userState === 'online'">
               <q-item-section avatar>
@@ -196,8 +178,7 @@
 
     <!-- Channel Messages -->
     <q-page-container>
-      <ChatComponent  :active-channel="selectedChannel"
-                      :user-state="userState"/>
+      <ChatComponent :active-channel="selectedChannel" :user-state="userState" />
     </q-page-container>
   </q-layout>
 </template>
@@ -256,15 +237,15 @@ const logout = async () => {
     channels.value.forEach((channel: string) => {
       ChannelService.closeConnection(channel);
     });
-    
+
     activityService.updateUserState('offline');
-    
+
     // 4. Clear all store state
     await store.dispatch('auth/logout');
-    
+
     // 5. Navigate to login page
     router.push({ name: 'login' });
-    
+
   } catch (error) {
     console.error('Logout error:', error);
     showNotification('Failed to logout', 'negative');
@@ -350,7 +331,7 @@ import {
   createNotificationContent,
   showBrowserNotification,
   showInAppNotification,
-  checkNotificationPermission, 
+  checkNotificationPermission,
   requestNotificationPermission,
 } from 'src/utils';
 
@@ -358,15 +339,15 @@ const notificationPermission = ref(checkNotificationPermission());
 
 watch(() => store.state.channels.pendingNotification, async (notification) => {
   if (!notification) return;
-  
+
   const { channel, message } = notification;
-  
-  const shouldNotify = shouldShowNotification(message, MessageMention.value, 
+
+  const shouldNotify = shouldShowNotification(message, MessageMention.value,
     currentUser?.nickname || '', userState.value);
-  
+
   if (!shouldNotify) return;
-  
-  const content = createNotificationContent(message, channel, 
+
+  const content = createNotificationContent(message, channel,
     currentUser?.nickname || '', truncateText);
 
   // For browser notifications, check permission first
@@ -376,7 +357,7 @@ watch(() => store.state.channels.pendingNotification, async (notification) => {
         notificationPermission.value = await requestNotificationPermission();
       }
     }
-    
+
     // Show browser notification if permitted
     if (notificationPermission.value.isGranted) {
       showBrowserNotification(content, channel, selectChannel);
@@ -389,7 +370,7 @@ watch(() => store.state.channels.pendingNotification, async (notification) => {
 });
 
 const toggleMentionOnly = () => {
-    MessageMention.value = !MessageMention.value
+  MessageMention.value = !MessageMention.value
 }
 
 // initial channel and subsequent changes
@@ -419,7 +400,7 @@ watch(() => store.state.channels.socketError, (error) => {
   if (!error) return;
 
   showNotification(
-    error.message, 
+    error.message,
     error.type || 'negative'  // Default to negative if no type specified
   );
 
@@ -428,8 +409,8 @@ watch(() => store.state.channels.socketError, (error) => {
 });
 
 const showNotification = (
-  message: string, 
-  type: string = 'info', 
+  message: string,
+  type: string = 'info',
   timeout: number = 5000,
   channelName?: string
 ) => {
@@ -440,7 +421,7 @@ const showNotification = (
     timeout,
     html: true, // Enable HTML content
     actions: [
-      { 
+      {
         label: channelName ? 'Open' : 'Dismiss',
         color: 'white',
         flat: true,
@@ -501,9 +482,7 @@ onMounted(async () => {
   // Check for fresh login flag
   const isFreshLogin = localStorage.getItem('fresh_login') === 'true'
   if (isFreshLogin) {
-    // Clear the flag
     localStorage.removeItem('fresh_login')
-    // Reload the page
     window.location.reload()
     return
   }
@@ -519,111 +498,113 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-  .message-header .sender {
-    margin-right: 10px;
+.message-header .sender {
+  margin-right: 10px;
+}
+
+.date-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 40px 0;
+  position: relative;
+}
+
+.date-divider span {
+  padding: 0 10px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  color: grey;
+}
+
+.date-divider hr {
+  position: absolute;
+  width: 100%;
+  top: 50%;
+  border: none;
+  border-top: 1px solid rgba(128, 128, 128, 0.5);
+}
+
+.newest-channel {
+  border-left: 4px solid #1e6bff;
+  background: linear-gradient(90deg, rgb(24, 88, 209) 0%, rgba(33, 186, 69, 0) 100%);
+}
+
+.newest-channel:hover {
+  background: linear-gradient(90deg, rgb(24, 88, 209) 0%, rgba(33, 186, 69, 0) 100%);
+}
+
+.picked {
+  background: rgba(255, 255, 255, 0.1);
+  /* Light background effect */
+}
+
+.notification-message {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 8px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification-message.bg-info {
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+  border-left: 4px solid #0D47A1;
+}
+
+.notification-message.bg-positive {
+  background: linear-gradient(135deg, #4CAF50, #388E3C);
+  border-left: 4px solid #1B5E20;
+}
+
+.notification-message.bg-negative {
+  background: linear-gradient(135deg, #F44336, #D32F2F);
+  border-left: 4px solid #B71C1C;
+}
+
+.notification-message.bg-warning {
+  background: linear-gradient(135deg, #FFC107, #FFA000);
+  border-left: 4px solid #FF6F00;
+}
+
+.notification-message .q-notification__message {
+  font-size: 14px;
+  line-height: 1.4;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.notification-message .q-notification__actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.notification-message .q-btn {
+  padding: 4px 12px;
+  text-transform: none;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.notification-message .q-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
   }
 
-  .date-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    margin: 40px 0;
-    position: relative;
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
-
-  .date-divider span {
-    padding: 0 10px;
-    margin-bottom: 20px;
-    font-weight: bold;
-    color: grey;
-  }
-
-  .date-divider hr {
-    position: absolute;
-    width: 100%;
-    top: 50%;
-    border: none;
-    border-top: 1px solid rgba(128, 128, 128, 0.5);
-  }
-
-  .newest-channel {
-    border-left: 4px solid #1e6bff;
-    background: linear-gradient(90deg, rgb(24, 88, 209) 0%, rgba(33,186,69,0) 100%);
-  }
-
-  .newest-channel:hover {
-    background: linear-gradient(90deg, rgb(24, 88, 209) 0%, rgba(33,186,69,0) 100%);
-  }
-
-  .picked {
-    background: rgba(255, 255, 255, 0.1); /* Light background effect */
-  }
-
-  .notification-message {
-    min-width: 300px;
-    max-width: 400px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    margin: 8px;
-    animation: slideIn 0.3s ease-out;
-  }
-
-  .notification-message.bg-info {
-    background: linear-gradient(135deg, #2196F3, #1976D2);
-    border-left: 4px solid #0D47A1;
-  }
-
-  .notification-message.bg-positive {
-    background: linear-gradient(135deg, #4CAF50, #388E3C);
-    border-left: 4px solid #1B5E20;
-  }
-
-  .notification-message.bg-negative {
-    background: linear-gradient(135deg, #F44336, #D32F2F);
-    border-left: 4px solid #B71C1C;
-  }
-
-  .notification-message.bg-warning {
-    background: linear-gradient(135deg, #FFC107, #FFA000);
-    border-left: 4px solid #FF6F00;
-  }
-
-  .notification-message .q-notification__message {
-    font-size: 14px;
-    line-height: 1.4;
-    color: white;
-    margin-bottom: 8px;
-  }
-
-  .notification-message .q-notification__actions {
-    margin-top: 8px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .notification-message .q-btn {
-    padding: 4px 12px;
-    text-transform: none;
-    font-weight: 500;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-  }
-
-  .notification-message .q-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
-
-  @keyframes slideIn {
-    from {
-      transform: translateY(-100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
+}
 </style>

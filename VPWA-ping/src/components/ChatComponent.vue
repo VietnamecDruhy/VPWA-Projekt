@@ -269,7 +269,7 @@ const handleInput = async () => {
 
   if (inputText !== '') {
     if (inputText.startsWith('/')) {
-      const command = inputText.slice(1).trim().toLowerCase()
+      const command = inputText.slice(1).trim()
       if (!handleCommand(command, store)) {
         console.error('Unrecognized command: ', command)
       }

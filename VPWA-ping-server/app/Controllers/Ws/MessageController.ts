@@ -102,6 +102,18 @@ export default class MessageController {
     socket: any,
     channelName: string
   ): Promise<boolean> {
+    // Check if user is banned
+    const isBanned = await Database
+      .from('banned_users')
+      .where('channel_id', channel.id)
+      .where('user_id', auth.user!.id)
+      .first();
+
+    if (isBanned) {
+      socket.emit('error', { message: `You have been banned from "${channelName}"` });
+      return false;
+    }
+
     const userIsInChannel = await Database.from('channel_users')
       .where('channel_id', channel.id)
       .andWhere('user_id', auth.user!.id)
@@ -120,11 +132,6 @@ export default class MessageController {
         username: auth.user!.nickname
       });
 
-      const message = await this.messageRepository.create(channel.name, -1,
-        `${auth.user!.nickname} joined channel`);
-      socket.broadcast.emit('message', message);
-      socket.emit('message', message);
-
       return true;  // User was newly added
     }
 
@@ -142,6 +149,7 @@ export default class MessageController {
       if (!channel) {
         if (isPrivate === undefined) {
           socket.emit('error', { message: 'Channel does not exist' });
+          socket.emit('leftChannel', name)
           return;
         }
         channel = await this.createChannel(name, auth, socket, isPrivate ?? false);
@@ -365,6 +373,15 @@ export default class MessageController {
       .where('user_id', userToRevoke.id)
       .delete();
 
+    await Database
+      .from('kicks')
+      .where('channel_id', channel.id)
+      .where(function () {
+        this.where('kicked_id', userToRevoke.id)  // Remove kicks against this user
+          .orWhere('user_id', userToRevoke.id)  // Remove kicks made by this user
+      })
+      .delete();
+
     return {
       channelName: channel.name,
       username: userToRevoke.nickname
@@ -377,7 +394,14 @@ export default class MessageController {
 
     try {
       const channel = await Channel.findByOrFail('name', params.name);
-      const userToKick = await User.findByOrFail('nickname', username);
+
+      let userToKick;
+      try {
+        userToKick = await User.findByOrFail('nickname', username);
+      } catch (error) {
+        socket.emit('error', { message: `User "${username}" does not exist` });
+        return;
+      }
 
       if (channel.ownerId === userToKick!.id) {
         socket.emit('error', { message: 'Cannot kick an admin' });
@@ -477,7 +501,13 @@ export default class MessageController {
 
     try {
       const channel = await Channel.findByOrFail('name', params.name);
-      const userToInvite = await User.findByOrFail('nickname', username);
+      let userToInvite;
+      try {
+        userToInvite = await User.findByOrFail('nickname', username);
+      } catch (error) {
+        socket.emit('error', { message: `User "${username}" does not exist` });
+        return;
+      }
 
       // Check if user is already in channel
       const existingMembership = await Database
@@ -489,6 +519,26 @@ export default class MessageController {
       if (existingMembership) {
         socket.emit('error', { message: 'User is already a member of this channel' });
         return;
+      }
+
+      // Check if user is banned
+      const isBanned = await Database
+        .from('banned_users')
+        .where('channel_id', channel.id)
+        .where('user_id', userToInvite.id)
+        .first();
+
+      if (isBanned) {
+        if (channel.ownerId !== auth.user!.id) {
+          socket.emit('error', { message: 'This user has been banned from the channel' });
+          return;
+        }
+        // If admin is inviting, remove the ban
+        await Database
+          .from('banned_users')
+          .where('channel_id', channel.id)
+          .where('user_id', userToInvite.id)
+          .delete();
       }
 
       // For private channels, only owner can invite
@@ -527,7 +577,6 @@ export default class MessageController {
         username: userToInvite.nickname
       });
 
-
       socket.to(roomName).emit('userJoined', {
         channelName: channel.name,
         username: userToInvite.nickname
@@ -538,8 +587,9 @@ export default class MessageController {
         username: userToInvite.nickname
       });
 
+      const unbanMessage = isBanned ? ` (ban removed)` : '';
       const message = await this.messageRepository.create(params.name, -1,
-        `${username} was invited to the channel by ${auth.user?.nickname}`);
+        `${username} was invited to the channel by ${auth.user?.nickname}${unbanMessage}`);
       socket.broadcast.emit('message', message);
       socket.emit('message', message);
 

@@ -34,7 +34,15 @@ export default class extends BaseSchema {
     this.defer(async (db) => {
       const now = new Date().toISOString()
       await db.table(this.tableName).insert({
-        message: 'Welcome to the general channel! This is a read-only channel for system announcements.',
+        message: 'Welcome to the general channel! This is a read-only channel for system announcements.\n\n' +
+          'Available commands:\n' +
+          '/list - Show all members in the current channel\n' +
+          '/cancel - Leave the current channel (deletes channel if you\'re the owner)\n' +
+          '/quit - Delete the channel (owner only)\n' +
+          '/revoke <username> - Remove a user from the channel (owner only)\n' +
+          '/kick <username> - Vote to kick a user from the channel\n' +
+          '/invite <username> - Invite a user to the channel\n' +
+          '/help - Show this help message',
         channel_id: -1,
         user_id: -1,
         created_at: now,

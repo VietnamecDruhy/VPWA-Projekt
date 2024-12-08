@@ -26,13 +26,6 @@ class ChannelSocketManager extends SocketManager {
     return ChannelSocketManager.serviceInstance;
   }
 
-  public kickUser(username: string): Promise<void> {
-    return this.emitAsync('kickUser', username);
-  }
-
-  public inviteUser(username: string): Promise<void> {
-    return this.emitAsync('inviteUser', username);
-  }
 
 
   public subscribe({ store }: BootParams): void {
@@ -43,10 +36,10 @@ class ChannelSocketManager extends SocketManager {
     });
 
     this.socket.on('error', (error: { message: string }) => {
-      // Commit to store - this will let us handle the error in the UI
+      // commit state for watcher in chatpage.vue
       store.commit('channels/SOCKET_ERROR', {
         message: error.message || 'An unknown error occurred',
-        type: 'negative'  // This matches Quasar's notification types
+        type: 'negative'
       });
     });
 
@@ -119,10 +112,6 @@ class ChannelSocketManager extends SocketManager {
 
     this.socket.on('disconnect', (reason) => {
       console.log(`Socket disconnected for channel ${channel}. Reason: ${reason}`);
-      store.commit('channels/SOCKET_ERROR', {
-        message: `Disconnected from channel ${channel}: ${reason}`,
-        type: 'warning'
-      });
     });
 
     this.socket.on('userInvited', async (data: { channelName: string; username: string }) => {
@@ -137,6 +126,14 @@ class ChannelSocketManager extends SocketManager {
         }
       }
     });
+  }
+
+  public kickUser(username: string): Promise<void> {
+    return this.emitAsync('kickUser', username);
+  }
+
+  public inviteUser(username: string): Promise<void> {
+    return this.emitAsync('inviteUser', username);
   }
 
   public listMembers(): Promise<ChannelUser[]> {
@@ -197,10 +194,6 @@ class ChannelService implements ChannelServiceInterface {
   }
 
   public join(name: string): ChannelSocketManager {
-    if (this.channels.has(name)) {
-      throw new Error(`User is already joined in channel "${name}"`);
-    }
-
     const channel = new ChannelSocketManager(`/channels/${name}`);
     this.channels.set(name, channel);
     return channel;

@@ -16,6 +16,7 @@ export interface NotificationContent {
     body: string;
 }
 
+
 /**
  * Determines if a notification should be shown based on user preferences and state
  */
@@ -59,7 +60,7 @@ export const showBrowserNotification = (
 ): void => {
     const notification = new Notification(content.title, {
         body: content.body,
-        icon: '/your-app-icon.png'
+        icon: '../css/ping.gif'
     });
 
     notification.onclick = () => {
