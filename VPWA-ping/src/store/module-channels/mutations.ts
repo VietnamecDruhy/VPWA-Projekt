@@ -20,8 +20,10 @@ const mutation: MutationTree<ChannelsStateInterface> = {
     // Initialize messages array if it doesn't exist
     if (!state.messages[channel]) {
       state.messages[channel] = messages;
+      console.log('no herer')
     } else {
       state.messages[channel] = [...messages, ...state.messages[channel]];
+      console.log('yes herer', state.messages[channel])
     }
 
     // Initialize members array if it doesn't exist

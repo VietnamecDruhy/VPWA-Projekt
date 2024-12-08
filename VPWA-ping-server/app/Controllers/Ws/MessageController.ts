@@ -187,7 +187,7 @@ export default class MessageController {
       await socket.join(roomName);
 
       // Emit messages with channel info
-      socket.emit('loadMessages:response', {
+      socket.emit('loadMessages', {
         messages,
         channelInfo: {
           name: channel.name,

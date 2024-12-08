@@ -43,13 +43,14 @@ class ChannelSocketManager extends SocketManager {
       });
     });
 
-    this.socket.on('loadMessages:response', (data: {
+    this.socket.on('loadMessages', (data: {
       messages: SerializedMessage[],
       channelInfo: {
         name: string,
         isPrivate: boolean
       }
     }) => {
+      console.log('Received messages:', data.messages);
       store.commit('channels/LOADING_SUCCESS', {
         channel: data.channelInfo.name,
         messages: data.messages,

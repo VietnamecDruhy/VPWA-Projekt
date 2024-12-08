@@ -121,6 +121,7 @@ const infiniteScroll = async () => {
     } catch (error) {
       console.error('Error loading more messages:', error);
     } finally {
+      console.log('final', messages)
       isLoading = false;
     }
   }
