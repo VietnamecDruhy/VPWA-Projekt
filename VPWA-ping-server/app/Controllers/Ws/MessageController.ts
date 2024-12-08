@@ -120,6 +120,11 @@ export default class MessageController {
         username: auth.user!.nickname
       });
 
+      const message = await this.messageRepository.create(channel.name, -1,
+        `${auth.user!.nickname} joined channel`);
+      socket.broadcast.emit('message', message);
+      socket.emit('message', message);
+
       return true;  // User was newly added
     }
 
@@ -136,9 +141,10 @@ export default class MessageController {
 
       if (!channel) {
         if (isPrivate === undefined) {
-          throw new Error('Channel does not exist');
+          socket.emit('error', { message: 'Channel does not exist' });
+          return;
         }
-        channel = await this.createChannel(name, auth, socket, isPrivate);
+        channel = await this.createChannel(name, auth, socket, isPrivate ?? false);
         return;
       }
 
@@ -150,7 +156,8 @@ export default class MessageController {
           .first();
 
         if (!userIsInChannel) {
-          throw new Error('Cannot join private channel without invitation');
+          socket.emit('error', { message: 'Cannot join private channel without invitation' });
+          return;
         }
       }
 
@@ -278,7 +285,8 @@ export default class MessageController {
         .first()
 
       if (!membership) {
-        throw new Error('User is not a member of this channel')
+        socket.emit('error', { message: 'User is not a member of this channel' });
+        return;
       }
 
       // If user is owner, delete the channel and all relationships
@@ -297,10 +305,15 @@ export default class MessageController {
         const result = await this.revokeUser(channel, auth.user!);
 
         // Channel-specific broadcasts
-        socket.to(roomName).emit('userRevoked', result);
+        socket.broadcast.emit('userRevoked', result);
         socket.emit('userRevoked', result);
 
         socket.emit('leftChannel', channel.name)
+
+        const message = await this.messageRepository.create(params.name, -1,
+          `${auth.user?.nickname} left channel`);
+        socket.broadcast.emit('message', message);
+        socket.emit('message', message);
       }
 
       // Clean up socket connection
@@ -319,7 +332,8 @@ export default class MessageController {
 
       // Verify user is the owner
       if (channel.ownerId !== auth.user!.id) {
-        throw new Error('Only channel owner can delete the channel')
+        socket.emit('error', { message: 'Only channel owner can delete the channel' });
+        return;
       }
 
       // Delete all channel_users entries
@@ -365,6 +379,11 @@ export default class MessageController {
       const channel = await Channel.findByOrFail('name', params.name);
       const userToKick = await User.findByOrFail('nickname', username);
 
+      if (channel.ownerId === userToKick!.id) {
+        socket.emit('error', { message: 'Cannot kick an admin' });
+        return;
+      }
+
       // Check if user is in channel
       const membership = await Database
         .from('channel_users')
@@ -373,7 +392,8 @@ export default class MessageController {
         .first();
 
       if (!membership) {
-        throw new Error('User is not a member of this channel');
+        socket.emit('error', { message: 'User is not a member of this channel' });
+        return;
       }
 
       // If requester is owner, revoke immediately
@@ -383,9 +403,14 @@ export default class MessageController {
         // Global broadcast to handle all user's sockets/tabs
         Ws.io.emit('revoked', result);
 
-        // Channel-specific broadcasts
         socket.to(roomName).emit('userRevoked', result);
         socket.emit('userRevoked', result);
+
+        const message = await this.messageRepository.create(params.name, -1,
+          `${username} was kicked from the channel by admin`);
+        socket.broadcast.emit('message', message);
+        socket.emit('message', message);
+
         return;
       }
 
@@ -398,7 +423,8 @@ export default class MessageController {
         .first();
 
       if (existingKick) {
-        throw new Error('You have already voted to kick this user');
+        socket.emit('error', { message: 'You have already voted to kick this user' });
+        return;
       }
 
       // Record the new kick
@@ -428,14 +454,17 @@ export default class MessageController {
 
         socket.to(roomName).emit('userRevoked', result);
         socket.emit('userRevoked', result);
+
+        const message = await this.messageRepository.create(params.name, -1,
+          `${username} was kicked from the channel by vote`);
+        socket.broadcast.emit('message', message);
+        socket.emit('message', message);
       }
       else {
-        // Load and broadcast the message to all clients
+        // announce votekicking
         const message = await this.messageRepository.create(params.name, -1,
           `${username} received a kick vote (${3 - totalKicks} more needed for kick)`)
-        // broadcast message to other users in channel
         socket.broadcast.emit('message', message)
-        // return message to sender
         socket.emit('message', message)
       }
     } catch (error) {
@@ -458,12 +487,14 @@ export default class MessageController {
         .first();
 
       if (existingMembership) {
-        throw new Error('User is already a member of this channel');
+        socket.emit('error', { message: 'User is already a member of this channel' });
+        return;
       }
 
       // For private channels, only owner can invite
       if (channel.isPrivate && channel.ownerId !== auth.user!.id) {
-        throw new Error('Only channel owner can add users to private channels');
+        socket.emit('error', { message: 'Only channel owner can add users to private channels' });
+        return;
       }
 
       // For public channels, check if inviter is a member
@@ -475,7 +506,8 @@ export default class MessageController {
           .first();
 
         if (!inviterIsMember) {
-          throw new Error('You must be a member of the channel to add others');
+          socket.emit('error', { message: 'You must be a member of the channel to add others' });
+          return;
         }
       }
 
@@ -505,6 +537,11 @@ export default class MessageController {
         channelName: channel.name,
         username: userToInvite.nickname
       });
+
+      const message = await this.messageRepository.create(params.name, -1,
+        `${username} was invited to the channel by ${auth.user?.nickname}`);
+      socket.broadcast.emit('message', message);
+      socket.emit('message', message);
 
     } catch (error) {
       console.error('Error adding user:', error);

@@ -123,7 +123,7 @@
         </q-item>
 
         <!-- Member Count -->
-        <q-item>
+        <q-item v-if="memberCount">
           <q-item-section avatar>
             <q-icon name="group" color="white" />
           </q-item-section>
@@ -277,8 +277,11 @@ const isPrivate = computed(() => {
 })
 
 const memberCount = computed(() => {
-  return store.getters['channels/memberCount'](selectedChannel.value)
-})
+  if (selectedChannel.value === 'general') {
+    return null;
+  }
+  return store.getters['channels/memberCount'](selectedChannel.value);
+});
 
 // current user
 const currentUser = store.state.auth.user
@@ -411,6 +414,19 @@ watch(
   { immediate: true }
 );
 
+// errors
+watch(() => store.state.channels.socketError, (error) => {
+  if (!error) return;
+
+  showNotification(
+    error.message, 
+    error.type || 'negative'  // Default to negative if no type specified
+  );
+
+  // Clear the error after showing notification
+  store.commit('channels/CLEAR_SOCKET_ERROR');
+});
+
 const showNotification = (
   message: string, 
   type: string = 'info', 
@@ -503,111 +519,111 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.message-header .sender {
-  margin-right: 10px;
-}
-
-.date-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  margin: 40px 0;
-  position: relative;
-}
-
-.date-divider span {
-  padding: 0 10px;
-  margin-bottom: 20px;
-  font-weight: bold;
-  color: grey;
-}
-
-.date-divider hr {
-  position: absolute;
-  width: 100%;
-  top: 50%;
-  border: none;
-  border-top: 1px solid rgba(128, 128, 128, 0.5);
-}
-
-.newest-channel {
-  border-left: 4px solid #1e6bff;
-  background: linear-gradient(90deg, rgb(24, 88, 209) 0%, rgba(33,186,69,0) 100%);
-}
-
-.newest-channel:hover {
-  background: linear-gradient(90deg, rgb(24, 88, 209) 0%, rgba(33,186,69,0) 100%);
-}
-
-.picked {
-  background: rgba(255, 255, 255, 0.1); /* Light background effect */
-}
-
-.notification-message {
-  min-width: 300px;
-  max-width: 400px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  margin: 8px;
-  animation: slideIn 0.3s ease-out;
-}
-
-.notification-message.bg-info {
-  background: linear-gradient(135deg, #2196F3, #1976D2);
-  border-left: 4px solid #0D47A1;
-}
-
-.notification-message.bg-positive {
-  background: linear-gradient(135deg, #4CAF50, #388E3C);
-  border-left: 4px solid #1B5E20;
-}
-
-.notification-message.bg-negative {
-  background: linear-gradient(135deg, #F44336, #D32F2F);
-  border-left: 4px solid #B71C1C;
-}
-
-.notification-message.bg-warning {
-  background: linear-gradient(135deg, #FFC107, #FFA000);
-  border-left: 4px solid #FF6F00;
-}
-
-.notification-message .q-notification__message {
-  font-size: 14px;
-  line-height: 1.4;
-  color: white;
-  margin-bottom: 8px;
-}
-
-.notification-message .q-notification__actions {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.notification-message .q-btn {
-  padding: 4px 12px;
-  text-transform: none;
-  font-weight: 500;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.notification-message .q-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
+  .message-header .sender {
+    margin-right: 10px;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+
+  .date-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 40px 0;
+    position: relative;
   }
-}
+
+  .date-divider span {
+    padding: 0 10px;
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: grey;
+  }
+
+  .date-divider hr {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    border: none;
+    border-top: 1px solid rgba(128, 128, 128, 0.5);
+  }
+
+  .newest-channel {
+    border-left: 4px solid #1e6bff;
+    background: linear-gradient(90deg, rgb(24, 88, 209) 0%, rgba(33,186,69,0) 100%);
+  }
+
+  .newest-channel:hover {
+    background: linear-gradient(90deg, rgb(24, 88, 209) 0%, rgba(33,186,69,0) 100%);
+  }
+
+  .picked {
+    background: rgba(255, 255, 255, 0.1); /* Light background effect */
+  }
+
+  .notification-message {
+    min-width: 300px;
+    max-width: 400px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin: 8px;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .notification-message.bg-info {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    border-left: 4px solid #0D47A1;
+  }
+
+  .notification-message.bg-positive {
+    background: linear-gradient(135deg, #4CAF50, #388E3C);
+    border-left: 4px solid #1B5E20;
+  }
+
+  .notification-message.bg-negative {
+    background: linear-gradient(135deg, #F44336, #D32F2F);
+    border-left: 4px solid #B71C1C;
+  }
+
+  .notification-message.bg-warning {
+    background: linear-gradient(135deg, #FFC107, #FFA000);
+    border-left: 4px solid #FF6F00;
+  }
+
+  .notification-message .q-notification__message {
+    font-size: 14px;
+    line-height: 1.4;
+    color: white;
+    margin-bottom: 8px;
+  }
+
+  .notification-message .q-notification__actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .notification-message .q-btn {
+    padding: 4px 12px;
+    text-transform: none;
+    font-weight: 500;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+
+  .notification-message .q-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 </style>

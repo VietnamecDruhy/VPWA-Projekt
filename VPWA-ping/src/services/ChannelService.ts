@@ -42,6 +42,14 @@ class ChannelSocketManager extends SocketManager {
       console.error('Socket loadMessages error:', error);
     });
 
+    this.socket.on('error', (error: { message: string }) => {
+      // Commit to store - this will let us handle the error in the UI
+      store.commit('channels/SOCKET_ERROR', {
+        message: error.message || 'An unknown error occurred',
+        type: 'negative'  // This matches Quasar's notification types
+      });
+    });
+
     this.socket.on('loadMessages:response', (data: {
       messages: SerializedMessage[],
       channelInfo: {
@@ -109,9 +117,12 @@ class ChannelSocketManager extends SocketManager {
       store.commit('channels/ADD_CHANNEL_MEMBER', { channelName, username });
     });
 
-    // Handle disconnect event
     this.socket.on('disconnect', (reason) => {
       console.log(`Socket disconnected for channel ${channel}. Reason: ${reason}`);
+      store.commit('channels/SOCKET_ERROR', {
+        message: `Disconnected from channel ${channel}: ${reason}`,
+        type: 'warning'
+      });
     });
 
     this.socket.on('userInvited', async (data: { channelName: string; username: string }) => {

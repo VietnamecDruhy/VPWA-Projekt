@@ -134,8 +134,8 @@ const mutation: MutationTree<ChannelsStateInterface> = {
       state.members[channelName].push(newUser);
     }
   },
+
   RESET_STATE(state) {
-    // Reset to initial state
     state.loading = false;
     state.error = null;
     state.messages = {};
@@ -144,6 +144,17 @@ const mutation: MutationTree<ChannelsStateInterface> = {
     state.members = {};
     state.typingUsers = {};
     state.pendingNotification = null;
+  },
+
+  SOCKET_ERROR(state, { message, type }: { message: string; type: string }) {
+    state.socketError = {
+      message,
+      type
+    };
+  },
+
+  CLEAR_SOCKET_ERROR(state) {
+    state.socketError = null;
   }
 }
 

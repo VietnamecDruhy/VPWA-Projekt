@@ -20,7 +20,11 @@ export interface ChannelsStateInterface {
   pendingNotification: {
     channel: string,
     message: SerializedMessage
-  } | null
+  } | null,
+  socketError: {
+    message: string;
+    type: string;
+  } | null;
 }
 
 function state(): ChannelsStateInterface {
@@ -32,7 +36,8 @@ function state(): ChannelsStateInterface {
     isPrivate: {},
     members: {},  // Initialize members object
     typingUsers: {},
-    pendingNotification: null
+    pendingNotification: null,
+    socketError: null
   }
 }
 

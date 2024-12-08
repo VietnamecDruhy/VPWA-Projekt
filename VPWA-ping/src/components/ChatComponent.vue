@@ -73,8 +73,6 @@ import { handleCommand } from 'src/utils';
 import { channelService } from 'src/services';
 import activityService from 'src/services/ActivityService'
 
-
-
 // define props
 const props = defineProps<{
   activeChannel: string
@@ -93,11 +91,11 @@ const infiniteScroll = async () => {
   const container = chatContainer.value;
   if (!container || messages.value.length === 0) return;
 
-  // Only trigger when near the top (within 100px) 
+  // trigger when near the top (within 100px) 
   if (container.scrollTop < 100 && messages.value.length >= 30) {
     isLoading = true;
 
-    // Store the current scroll positions
+    // store the current scroll positions
     const scrollHeight = container.scrollHeight;
     const scrollTop = container.scrollTop;
 
@@ -105,8 +103,7 @@ const infiniteScroll = async () => {
       // Get oldest message for reference
       const oldestMessage = messages.value[0];
 
-      // Add loading delay for UX
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise(resolve => setTimeout(resolve, 600));
 
       // Dispatch action to load more messages
       await store.dispatch('channels/loadMoreMessages', {
@@ -115,7 +112,6 @@ const infiniteScroll = async () => {
         messageId: oldestMessage.id
       });
 
-      // After store update, wait for DOM to update
       await nextTick(() => {
         if (container) {
           // Calculate the new scroll position
@@ -142,19 +138,10 @@ onMounted(() => {
   }
 })
 
-// // watch join channel to load messages, create socket to listen for new messages
-// watch(() => props.activeChannel, async (newChannel) => {
-//   if (newChannel) {
-//     // store.commit('channels/SET_ACTIVE', newChannel)
-//     // store.getters['channels/currentMessages']
-//   }
-// }, { immediate: true })
-
 // get messages through store
-const messages = computed(() => {
+const rawMessages = computed(() => {
   const msgs = store.getters['channels/currentMessages'] || [];
   
-  // If user is offline, only return messages up to when they went offline
   if (props.userState === 'offline') {
     const lastOnlineTimestamp = activityService.getLastOnlineTimestamp();
     if (lastOnlineTimestamp) {
@@ -166,6 +153,27 @@ const messages = computed(() => {
   
   return msgs;
 })
+
+const messages = computed(() => {
+  if (!currentUser.value?.nickname) return rawMessages.value;
+  
+  return rawMessages.value.map((message: any) => {
+    const mentionPattern = new RegExp(`@${currentUser.value?.nickname}\\b`, 'gi');
+    
+    // Check if message contains mention
+    const hasMention = mentionPattern.test(message.content);
+    
+    // If mention found, wrap the entire message content
+    if (hasMention) {
+      return {
+        ...message,
+        content: `<span class="mention-highlight">${message.content}</span>`
+      };
+    }
+    
+    return message;
+  });
+});
 
 // current user
 const currentUser = computed(() => store.state.auth.user)
@@ -345,6 +353,15 @@ onUnmounted(() => {
 </script>
 
 
+<style>
+.mention-highlight {
+  background-color: rgba(244, 244, 39, 0.3);
+  padding: 0 2px;
+  border-radius: 2px;
+  display: inline-block;
+}
+</style>
+
 <style scoped>
 .chat-message {
   display: flex;
@@ -450,5 +467,11 @@ onUnmounted(() => {
   color: #000000;
   background-color: #9e9e9e; 
   font-weight: bold;
+}
+
+.bubble {
+  overflow-wrap: break-word;  /* Modern version of word-wrap */
+  white-space: pre-wrap;      /* Preserve whitespace and wraps */
+  max-width: 40%;            /* Prevent messages from stretching too wide */
 }
 </style>
