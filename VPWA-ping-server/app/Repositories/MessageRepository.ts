@@ -27,8 +27,6 @@ export default class MessageRepository implements MessageRepositoryContract {
         return [];
       }
 
-      console.log('Messages:', channel.messages)
-
       return channel.messages.reverse().map((message) => {
         const serialized = message.serialize();
         return {

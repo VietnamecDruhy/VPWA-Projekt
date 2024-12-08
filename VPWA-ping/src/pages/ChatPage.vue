@@ -342,15 +342,23 @@ watch(() => store.state.channels.pendingNotification, async (notification) => {
 
   const { channel, message } = notification;
 
-  const shouldNotify = shouldShowNotification(message, MessageMention.value,
-    currentUser?.nickname || '', userState.value);
+  const shouldNotify = shouldShowNotification(
+    message,
+    MessageMention.value,
+    currentUser?.nickname || '',
+    userState.value
+  );
 
   if (!shouldNotify) return;
 
-  const content = createNotificationContent(message, channel,
-    currentUser?.nickname || '', truncateText);
+  const content = createNotificationContent(
+    message,
+    channel,
+    currentUser?.nickname || '',
+    truncateText
+  );
 
-  // For browser notifications, check permission first
+  // For browser notifications when app is not visible
   if (!$q.appVisible) {
     if (!notificationPermission.value.isGranted) {
       if (!notificationPermission.value.isDenied) {
@@ -362,10 +370,14 @@ watch(() => store.state.channels.pendingNotification, async (notification) => {
     if (notificationPermission.value.isGranted) {
       showBrowserNotification(content, channel, selectChannel);
     } else {
-      showInAppNotification(content, channel, showNotification);
+      if (channel !== store.state.channels.active) {
+        showInAppNotification(content, channel, showNotification);
+      }
     }
   } else {
-    showInAppNotification(content, channel, showNotification);
+    if (channel !== store.state.channels.active) {
+      showInAppNotification(content, channel, showNotification);
+    }
   }
 });
 

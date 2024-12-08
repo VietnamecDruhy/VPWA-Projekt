@@ -9,7 +9,7 @@
                 <h5 class="text-dark sf-pro-700 center">
                   {{ isSignUp ? 'Sign Up' : 'Sign In' }}
                 </h5>
-                <img src="../css/ping.gif" alt="Ping Animation" class="ping-image" />
+                <img src="/public/icons/ping.gif" alt="Ping Animation" class="ping-image" />
               </div>
 
               <!-- Name, Surname, Nickname for Sign Up -->

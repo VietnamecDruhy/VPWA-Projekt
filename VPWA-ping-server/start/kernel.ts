@@ -43,3 +43,9 @@ Server.middleware.register([
 Server.middleware.registerNamed({
   auth: () => import("App/Middleware/Auth"),
 })
+
+export default class Kernel {
+  public static commands = [
+    './commands/ChannelCleanup',
+  ]
+}

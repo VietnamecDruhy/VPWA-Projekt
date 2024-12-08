@@ -1,5 +1,14 @@
 {
   "commands": {
+    "channel:cleanup": {
+      "settings": {},
+      "commandPath": "./commands/ChannelCleanup",
+      "commandName": "channel:cleanup",
+      "description": "Delete channels that have been inactive for more than 30 days",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/build/commands/DumpRc",

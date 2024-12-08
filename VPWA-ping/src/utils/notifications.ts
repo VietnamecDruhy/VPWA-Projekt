@@ -60,7 +60,7 @@ export const showBrowserNotification = (
 ): void => {
     const notification = new Notification(content.title, {
         body: content.body,
-        icon: '../css/ping.gif'
+        icon: '/public/icons/favicon.png'
     });
 
     notification.onclick = () => {

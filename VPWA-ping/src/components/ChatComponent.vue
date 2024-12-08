@@ -21,11 +21,7 @@
 
             <div class="message-header">
               <span class="sender">
-                <span 
-                  v-if="!isMine(message)" 
-                  class="status-indicator"
-                  :class="getUserStatusClass(message)"
-                ></span>
+                <span v-if="!isMine(message)" class="status-indicator" :class="getUserStatusClass(message)"></span>
                 {{ message.author.nickname }}
               </span>
               <span class="time">{{ formatTime(message.createdAt) }}</span>
@@ -38,10 +34,9 @@
       </div>
 
       <div class="typing-indicator-container">
-        <div v-if="activeTypers.length > 0" class="typing-indicator q-px-md">
-          <div v-for="typer in activeTypers" :key="typer.nickname" 
-              class="cursor-pointer hover:underline"
-              @click="toggleTyperExpansion(typer.nickname)">
+        <div v-if="activeTypers.length > 0 && props.userState !== 'offline'" class="typing-indicator q-px-md">
+          <div v-for="typer in activeTypers" :key="typer.nickname" class="cursor-pointer hover:underline"
+            @click="toggleTyperExpansion(typer.nickname)">
             <span v-if="expandedTypers.includes(typer.nickname)">
               {{ typer.nickname }}: {{ typer.content }}
             </span>
@@ -141,28 +136,28 @@ onMounted(() => {
 // get messages through store
 const rawMessages = computed(() => {
   const msgs = store.getters['channels/currentMessages'] || [];
-  
+
   if (props.userState === 'offline') {
     const lastOnlineTimestamp = activityService.getLastOnlineTimestamp();
     if (lastOnlineTimestamp) {
-      return msgs.filter((msg: SerializedMessage) => 
+      return msgs.filter((msg: SerializedMessage) =>
         new Date(msg.createdAt) <= new Date(lastOnlineTimestamp)
       );
     }
   }
-  
+
   return msgs;
 })
 
 const messages = computed(() => {
   if (!currentUser.value?.nickname) return rawMessages.value;
-  
+
   return rawMessages.value.map((message: any) => {
     const mentionPattern = new RegExp(`@${currentUser.value?.nickname}\\b`, 'gi');
-    
+
     // Check if message contains mention
     const hasMention = mentionPattern.test(message.content);
-    
+
     // If mention found, wrap the entire message content
     if (hasMention) {
       return {
@@ -170,7 +165,7 @@ const messages = computed(() => {
         content: `<span class="mention-highlight">${message.content}</span>`
       };
     }
-    
+
     return message;
   });
 });
@@ -212,7 +207,7 @@ const expandedTypers = ref<string[]>([]);
 
 
 const typingUsers = computed(() => {
-    return store.getters['channels/typingUsers'](props.activeChannel)
+  return store.getters['channels/typingUsers'](props.activeChannel)
 })
 
 const toggleTyperExpansion = (nickname: string) => {
@@ -226,16 +221,16 @@ const toggleTyperExpansion = (nickname: string) => {
 const activeTypers = computed(() => {
   const now = Date.now()
 
-  type TypingUser = { 
-    timestamp: number; 
-    user: { 
-      nickname: string; 
-      content: { 
-        content: string 
-      } 
-    } 
+  type TypingUser = {
+    timestamp: number;
+    user: {
+      nickname: string;
+      content: {
+        content: string
+      }
+    }
   }
-  
+
   return (Object.entries(typingUsers.value) as [string, TypingUser][])
     .filter(([_, typer]) => now - typer.timestamp < TYPING_TIMEOUT)
     .filter(([_, typer]) => typer.user.nickname !== currentUser.value?.nickname)
@@ -293,16 +288,16 @@ const sendMessage = async () => {
 // user status
 const getUserStatusClass = (message: SerializedMessage): string => {
   if (isMine(message)) return ''
-  
+
   // Check if user is still a member of the channel
   const currentChannel = props.activeChannel
   const channelMembers = store.state.channels.members[currentChannel] || []
   const isChannelMember = channelMembers.some(member => member.id === message.author.id)
-  
+
   if (!isChannelMember) {
     return 'status-non-member'
   }
-  
+
   const userState = store.getters['activity/getUserState'](message.author.id)
   switch (userState) {
     case 'dnd':
@@ -450,11 +445,11 @@ onUnmounted(() => {
 }
 
 .status-online {
-  background-color: #4CAF50;  
+  background-color: #4CAF50;
 }
 
 .status-offline {
-  background-color: #9e9e9e; 
+  background-color: #9e9e9e;
 }
 
 .status-dnd {
@@ -465,13 +460,16 @@ onUnmounted(() => {
   content: '×';
   font-size: 8px;
   color: #000000;
-  background-color: #9e9e9e; 
+  background-color: #9e9e9e;
   font-weight: bold;
 }
 
 .bubble {
-  overflow-wrap: break-word;  /* Modern version of word-wrap */
-  white-space: pre-wrap;      /* Preserve whitespace and wraps */
-  max-width: 40%;            /* Prevent messages from stretching too wide */
+  overflow-wrap: break-word;
+  /* Modern version of word-wrap */
+  white-space: pre-wrap;
+  /* Preserve whitespace and wraps */
+  max-width: 40%;
+  /* Prevent messages from stretching too wide */
 }
 </style>

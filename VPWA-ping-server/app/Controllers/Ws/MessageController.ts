@@ -375,10 +375,14 @@ export default class MessageController {
 
     await Database
       .from('kicks')
-      .where('channel_id', channel.id)
-      .where(function () {
-        this.where('kicked_id', userToRevoke.id)  // Remove kicks against this user
-          .orWhere('user_id', userToRevoke.id)  // Remove kicks made by this user
+      .where((query) => {
+        query
+          .where('channel_id', channel.id)
+          .where((subQuery) => {
+            subQuery
+              .where('kicked_id', userToRevoke.id)
+              .orWhere('user_id', userToRevoke.id);
+          });
       })
       .delete();
 
@@ -435,6 +439,11 @@ export default class MessageController {
         socket.broadcast.emit('message', message);
         socket.emit('message', message);
 
+        return;
+      }
+
+      if (channel.isPrivate) {
+        socket.emit('error', { message: 'Only channel owner can kick in private channels' });
         return;
       }
 
