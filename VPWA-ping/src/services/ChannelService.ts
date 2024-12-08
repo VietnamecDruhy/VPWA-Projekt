@@ -43,7 +43,22 @@ class ChannelSocketManager extends SocketManager {
       });
     });
 
-    this.socket.on('loadMessages', (data: {
+    this.socket.on('loadMessages:response', (data: {
+      messages: SerializedMessage[],
+      channelInfo: {
+        name: string,
+        isPrivate: boolean
+      }
+    }) => {
+      console.log('Received messages:', data.messages);
+      store.commit('channels/LOADING_SUCCESS', {
+        channel: data.channelInfo.name,
+        messages: data.messages,
+        isPrivate: data.channelInfo.isPrivate
+      });
+    });
+
+    this.socket.on('loadMoreMessages', (data: {
       messages: SerializedMessage[],
       channelInfo: {
         name: string,
@@ -173,6 +188,10 @@ class ChannelSocketManager extends SocketManager {
 
   public loadMessages(messageId?: string, isPrivate?: boolean): Promise<SerializedMessage[]> {
     return this.emitAsync('loadMessages', { messageId, isPrivate });
+  }
+
+  public loadMoreMessages(messageId?: string, isPrivate?: boolean): Promise<SerializedMessage[]> {
+    return this.emitAsync('loadMoreMessages', { messageId, isPrivate });
   }
 
   public loadChannels(): Promise<void> {

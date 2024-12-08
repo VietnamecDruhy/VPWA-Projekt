@@ -87,6 +87,7 @@ let typingTimeout: ReturnType<typeof setTimeout> | null = null;
 // Infinite scroll handler
 const infiniteScroll = async () => {
   if (isLoading.value) return;
+  console.log('loading')
 
   const container = chatContainer.value;
   if (!container || messages.value.length === 0) return;
@@ -107,6 +108,7 @@ const infiniteScroll = async () => {
       await new Promise(resolve => setTimeout(resolve, 600));
 
       // Dispatch action to load more messages
+      console.log('dispatch')
       await store.dispatch('channels/loadMoreMessages', {
         channel: props.activeChannel,
         timestamp: oldestMessage.createdAt,

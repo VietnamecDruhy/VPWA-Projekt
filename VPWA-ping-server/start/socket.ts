@@ -15,6 +15,7 @@ Ws.namespace('/activity')
 // Channel specific namespace
 Ws.namespace('channels/:name')
   .on('loadMessages', 'MessageController.loadMessages')
+  .on('loadMoreMessages', 'MessageController.loadMoreMessages')
   .on('addMessage', 'MessageController.addMessage')
   .on('typing:start', 'MessageController.handleTypingStart')
   .on('typing:stop', 'MessageController.handleTypingStop')

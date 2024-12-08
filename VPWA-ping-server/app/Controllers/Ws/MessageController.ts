@@ -138,6 +138,22 @@ export default class MessageController {
     return false;  // User was already in channel
   }
 
+  public async loadMoreMessages(
+    { params, socket }: WsContextContract,
+    { messageId }: { messageId?: string; isPrivate?: boolean } = {}
+  ) {
+    const name = params.name.split('/').pop();
+    let channel = await Channel.query().where('name', name).preload('users').first();
+    const messages = await this.messageRepository.getAll(name, messageId);
+    socket.emit('loadMoreMessages', {
+      messages,
+      channelInfo: {
+        name: channel!.name,
+        isPrivate: channel!.isPrivate
+      }
+    });
+  }
+
   public async loadMessages(
     { params, socket, auth }: WsContextContract,
     { messageId, isPrivate }: { messageId?: string; isPrivate?: boolean } = {}
@@ -187,7 +203,7 @@ export default class MessageController {
       await socket.join(roomName);
 
       // Emit messages with channel info
-      socket.emit('loadMessages', {
+      socket.emit('loadMessages:response', {
         messages,
         channelInfo: {
           name: channel.name,
