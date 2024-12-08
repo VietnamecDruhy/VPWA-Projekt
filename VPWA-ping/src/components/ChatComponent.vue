@@ -59,7 +59,6 @@
   </q-page>
 </template>
 
-
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useStore } from 'src/store';
@@ -77,18 +76,24 @@ const props = defineProps<{
 // define store
 const store = useStore()
 
-// Infinite scroll
-let isLoading = false;  // Flag to prevent multiple simultaneous loads
+// State refs
+const isLoading = ref(false);
+const chatContainer = ref<HTMLElement | null>(null);
+const text = ref('');
+const expandedTypers = ref<string[]>([]);
+const TYPING_TIMEOUT = 3000;
+let typingTimeout: ReturnType<typeof setTimeout> | null = null;
 
+// Infinite scroll handler
 const infiniteScroll = async () => {
-  if (isLoading) return;
+  if (isLoading.value) return;
 
   const container = chatContainer.value;
   if (!container || messages.value.length === 0) return;
 
   // trigger when near the top (within 100px) 
   if (container.scrollTop < 100 && messages.value.length >= 30) {
-    isLoading = true;
+    isLoading.value = true;
 
     // store the current scroll positions
     const scrollHeight = container.scrollHeight;
@@ -98,6 +103,7 @@ const infiniteScroll = async () => {
       // Get oldest message for reference
       const oldestMessage = messages.value[0];
 
+      // Add small delay to prevent rapid loading
       await new Promise(resolve => setTimeout(resolve, 600));
 
       // Dispatch action to load more messages
@@ -109,11 +115,9 @@ const infiniteScroll = async () => {
 
       await nextTick(() => {
         if (container) {
-          // Calculate the new scroll position
+          // Calculate and maintain scroll position
           const newScrollHeight = container.scrollHeight;
           const heightDifference = newScrollHeight - scrollHeight;
-
-          // Adjust scroll position to maintain user's view
           container.scrollTop = scrollTop + heightDifference;
         }
       });
@@ -121,20 +125,14 @@ const infiniteScroll = async () => {
     } catch (error) {
       console.error('Error loading more messages:', error);
     } finally {
-      console.log('final', messages)
-      isLoading = false;
+      isLoading.value = false;
     }
   }
 };
 
-// On mount add a event listener for loading new messages 
-onMounted(() => {
-  if (chatContainer.value) {
-    chatContainer.value.addEventListener('scroll', infiniteScroll)
-  }
-})
+// Computed properties
+const currentUser = computed(() => store.state.auth.user);
 
-// get messages through store
 const rawMessages = computed(() => {
   const msgs = store.getters['channels/currentMessages'] || [];
 
@@ -148,18 +146,15 @@ const rawMessages = computed(() => {
   }
 
   return msgs;
-})
+});
 
 const messages = computed(() => {
   if (!currentUser.value?.nickname) return rawMessages.value;
 
   return rawMessages.value.map((message: any) => {
     const mentionPattern = new RegExp(`@${currentUser.value?.nickname}\\b`, 'gi');
-
-    // Check if message contains mention
     const hasMention = mentionPattern.test(message.content);
 
-    // If mention found, wrap the entire message content
     if (hasMention) {
       return {
         ...message,
@@ -171,53 +166,9 @@ const messages = computed(() => {
   });
 });
 
-// current user
-const currentUser = computed(() => store.state.auth.user)
-
-// check owner of the message
-const isMine = (message: SerializedMessage): boolean => {
-  if (!currentUser.value) return false
-  return message.author.id === currentUser.value.id
-}
-
-// watch for new messages to scroll down
-const chatContainer = ref<HTMLElement | null>(null)
-
-watch(messages, () => {
-  const currentMessage = messages.value[messages.value.length - 1];
-
-  if (currentMessage.author.id === currentUser.value?.id) {
-    text.value = '';
-  }
-
-  nextTick(() => {
-    if (chatContainer.value) {
-      chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-    }
-  });
-
-}, { deep: true });
-
-
-// typing watcher
-const text = ref('')
-const TYPING_TIMEOUT = 3000
-let typingTimeout: ReturnType<typeof setTimeout> | null = null
-
-const expandedTypers = ref<string[]>([]);
-
-
 const typingUsers = computed(() => {
   return store.getters['channels/typingUsers'](props.activeChannel)
-})
-
-const toggleTyperExpansion = (nickname: string) => {
-  if (expandedTypers.value.includes(nickname)) {
-    expandedTypers.value = expandedTypers.value.filter(n => n !== nickname);
-  } else {
-    expandedTypers.value.push(nickname);
-  }
-};
+});
 
 const activeTypers = computed(() => {
   const now = Date.now()
@@ -242,38 +193,72 @@ const activeTypers = computed(() => {
     }))
 });
 
-// Update text watcher
+// Watchers
+watch(messages, (newMessages, oldMessages) => {
+  // Only scroll if:
+  // 1. This is a new message being added (length increased by 1)
+  // 2. The new message is from the current user or it's the first load
+  const isNewMessage = oldMessages && newMessages.length === oldMessages.length + 1;
+  const isFirstLoad = !oldMessages || oldMessages.length === 0;
+  const currentMessage = newMessages[newMessages.length - 1];
+  const isMyMessage = currentMessage?.author.id === currentUser.value?.id;
+
+  if ((isNewMessage && isMyMessage) || isFirstLoad) {
+    if (isNewMessage) {
+      text.value = ''; // Clear input only when sending a new message
+    }
+    nextTick(() => {
+      if (chatContainer.value) {
+        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+      }
+    });
+  }
+}, { deep: true });
+
 watch(text, (newValue) => {
-  if (!props.activeChannel) return
+  if (!props.activeChannel) return;
 
   if (newValue.trim()) {
-    channelService.in(props.activeChannel)?.emitTyping(true, newValue)
+    channelService.in(props.activeChannel)?.emitTyping(true, newValue);
 
-    if (typingTimeout) clearTimeout(typingTimeout)
+    if (typingTimeout) clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
-      channelService.in(props.activeChannel)?.emitTyping(false)
-    }, TYPING_TIMEOUT)
+      channelService.in(props.activeChannel)?.emitTyping(false);
+    }, TYPING_TIMEOUT);
   } else {
-    if (typingTimeout) clearTimeout(typingTimeout)
-    channelService.in(props.activeChannel)?.emitTyping(false)
+    if (typingTimeout) clearTimeout(typingTimeout);
+    channelService.in(props.activeChannel)?.emitTyping(false);
   }
-})
+});
 
-// send message
+// Methods
+const isMine = (message: SerializedMessage): boolean => {
+  if (!currentUser.value) return false;
+  return message.author.id === currentUser.value.id;
+};
+
+const toggleTyperExpansion = (nickname: string) => {
+  if (expandedTypers.value.includes(nickname)) {
+    expandedTypers.value = expandedTypers.value.filter(n => n !== nickname);
+  } else {
+    expandedTypers.value.push(nickname);
+  }
+};
+
 const handleInput = async () => {
-  const inputText = text.value.trim()
+  const inputText = text.value.trim();
 
   if (inputText !== '') {
     if (inputText.startsWith('/')) {
-      const command = inputText.slice(1).trim()
+      const command = inputText.slice(1).trim();
       if (!handleCommand(command, store)) {
-        console.error('Unrecognized command: ', command)
+        console.error('Unrecognized command: ', command);
       }
     } else {
-      await sendMessage()
+      await sendMessage();
     }
   }
-}
+};
 
 const sendMessage = async () => {
   try {
@@ -286,44 +271,41 @@ const sendMessage = async () => {
   }
 };
 
-// user status
 const getUserStatusClass = (message: SerializedMessage): string => {
-  if (isMine(message)) return ''
+  if (isMine(message)) return '';
 
-  // Check if user is still a member of the channel
-  const currentChannel = props.activeChannel
-  const channelMembers = store.state.channels.members[currentChannel] || []
-  const isChannelMember = channelMembers.some(member => member.id === message.author.id)
+  const currentChannel = props.activeChannel;
+  const channelMembers = store.state.channels.members[currentChannel] || [];
+  const isChannelMember = channelMembers.some(member => member.id === message.author.id);
 
   if (!isChannelMember) {
-    return 'status-non-member'
+    return 'status-non-member';
   }
 
-  const userState = store.getters['activity/getUserState'](message.author.id)
+  const userState = store.getters['activity/getUserState'](message.author.id);
   switch (userState) {
     case 'dnd':
-      return 'status-dnd'
+      return 'status-dnd';
     case 'online':
-      return 'status-online'
+      return 'status-online';
     default:
-      return 'status-offline'
+      return 'status-offline';
   }
-}
+};
 
-// misc
 const shouldShowDateDivider = (index: number): boolean => {
-  if (index === 0) return true
+  if (index === 0) return true;
 
-  const currentMessage = messages.value[index]
-  const previousMessage = messages.value[index - 1]
+  const currentMessage = messages.value[index];
+  const previousMessage = messages.value[index - 1];
 
-  return !isSameDate(currentMessage.createdAt, previousMessage.createdAt)
-}
+  return !isSameDate(currentMessage.createdAt, previousMessage.createdAt);
+};
 
 const formatDate = (timestamp: string): string => {
-  const date1 = new Date(timestamp);
-  return date1.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })
-}
+  const date = new Date(timestamp);
+  return date.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' });
+};
 
 const isSameDate = (timestamp1: string, timestamp2: string): boolean => {
   const date1 = new Date(timestamp1);
@@ -337,17 +319,26 @@ const isSameDate = (timestamp1: string, timestamp2: string): boolean => {
 };
 
 const formatTime = (timestamp: string): string => {
-  const date1 = new Date(timestamp)
-  return date1.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-}
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+};
+
+// Lifecycle hooks
+onMounted(() => {
+  if (chatContainer.value) {
+    chatContainer.value.addEventListener('scroll', infiniteScroll);
+  }
+});
 
 onUnmounted(() => {
   if (chatContainer.value) {
-    chatContainer.value.removeEventListener('scroll', infiniteScroll)
+    chatContainer.value.removeEventListener('scroll', infiniteScroll);
   }
-})
+  if (typingTimeout) {
+    clearTimeout(typingTimeout);
+  }
+});
 </script>
-
 
 <style>
 .mention-highlight {
